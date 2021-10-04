@@ -21,7 +21,12 @@ in
 mkShell {
   buildInputs = [ erlang elixir ]
     ++ optional stdenv.isLinux inotify-tools
-  ;
+    ++ optionals stdenv.isDarwin (with darwin.apple_sdk.frameworks; [
+      # For file_system on macOS.
+      CoreFoundation
+      CoreServices
+    ]);
+
   shellHook = ''
     export LOCALE_ARCHIVE=/usr/lib/locale/locale-archive
   '';
