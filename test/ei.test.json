@@ -1,0 +1,11 @@
+{
+  "steps": [
+     {
+      "name": "test",
+      "command": "echo",
+      "args": [
+        "TEST"
+      ]
+    }
+  ]
+}

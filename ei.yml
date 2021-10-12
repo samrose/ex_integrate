@@ -1,0 +1,11 @@
+steps:
+  - name: "clean"
+    command:
+      - "mix"
+    args:
+      - "clean"
+  - name: "compile"
+    command:
+      - "mix"
+    args:
+      - "compile"
