@@ -9,7 +9,6 @@ defmodule ExIntegrate do
     |> Map.get("steps")
     |> Enum.each(fn x->
         path = System.find_executable(x["command"])
-        IO.inspect(path)
         Rambo.run(path,x["args"], log: true)
     end)
   end

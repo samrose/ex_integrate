@@ -1,7 +1,7 @@
 {
   "steps": [
      {
-      "name": "clean",
+      "name": "get deps",
       "command": "mix",
       "args": [
         "deps.get"
