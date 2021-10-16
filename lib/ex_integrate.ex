@@ -13,9 +13,11 @@ defmodule ExIntegrate do
 
     steps = Enum.map(config_json["steps"], &Step.new/1)
 
-    Enum.each(steps, fn step ->
-      path = System.find_executable(step.command)
-      Rambo.run(path, step.args, log: true)
-    end)
+    Enum.each(steps, &run_step/1)
+  end
+
+  def run_step(%Step{} = step) do
+    path = System.find_executable(step.command)
+    Rambo.run(path, step.args, log: true)
   end
 end
