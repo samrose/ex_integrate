@@ -8,19 +8,14 @@ defmodule ExIntegrateTest do
     test "success: returns :ok" do
       assert :ok = ExIntegrate.run_steps(@config_fixture_path)
     end
-  end
 
-  test "rejects non-binary input" do
-    assert_raise FunctionClauseError, fn ->
-      ExIntegrate.run_steps(123)
-    end
-
-    assert_raise FunctionClauseError, fn ->
-      ExIntegrate.run_steps(:not_a_string)
-    end
-
-    assert_raise FunctionClauseError, fn ->
-      ExIntegrate.run_steps(nil)
+    for invalid_input <- [123, :not_a_string, nil] do
+      test "rejects non-binary input for #{invalid_input}" do
+        assert_raise FunctionClauseError, fn ->
+          invalid_input = Macro.escape(unquote(invalid_input))
+          ExIntegrate.run_steps(invalid_input)
+        end
+      end
     end
   end
 end
