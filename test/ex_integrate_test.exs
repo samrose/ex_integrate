@@ -2,7 +2,11 @@ defmodule ExIntegrateTest do
   use ExUnit.Case
   doctest ExIntegrate
 
-  test "run steps" do
-    assert ExIntegrate.run_steps("test/ei.test.json") == :ok
+  @config_fixture_path "test/fixtures/ei.test.json"
+
+  describe "running the steps" do
+    test "success: returns :ok" do
+      assert :ok = ExIntegrate.run_steps(@config_fixture_path)
+    end
   end
 end
