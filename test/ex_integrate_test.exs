@@ -9,6 +9,11 @@ defmodule ExIntegrateTest do
       assert :ok = ExIntegrate.run_steps(@config_fixture_path)
     end
 
+    test "when file doesn't exist, raises error" do
+      assert_raise File.Error,
+        fn -> ExIntegrate.run_steps("nonexistant_file") end
+    end
+
     for invalid_input <- [123, :not_a_string, nil] do
       test "rejects non-binary input for #{invalid_input}" do
         assert_raise FunctionClauseError, fn ->
