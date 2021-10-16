@@ -3,9 +3,9 @@ defmodule ExIntegrate do
   Documentation for `ExIntegrate`.
   """
 
-  def run_steps(file) do
+  def run_steps(filename) when is_binary(filename) do
     steps =
-      file
+      filename
       |> File.read!()
       |> Jason.decode!()
 
