@@ -4,12 +4,13 @@ defmodule ExIntegrate.Step do
   """
 
   @enforce_keys [:name, :command]
-  defstruct [:name, :command, args: []]
+  defstruct [:name, :command, args: [], command_data: nil]
 
   @type t :: %__MODULE__{
-          name: String.t(),
+          args: [String.t()],
           command: :String.t(),
-          args: [String.t()]
+          command_data: Rambo.t(),
+          name: String.t()
         }
 
   def new(attrs) when is_map(attrs) do
