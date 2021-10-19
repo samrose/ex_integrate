@@ -4,6 +4,7 @@ defmodule ExIntegrate do
   """
 
   alias ExIntegrate.Step
+  alias ExIntegrate.StepRunner
 
   def run_steps(filename) when is_binary(filename) do
     config_json =
@@ -16,8 +17,5 @@ defmodule ExIntegrate do
     Enum.each(steps, &run_step/1)
   end
 
-  def run_step(%Step{} = step) do
-    path = System.find_executable(step.command)
-    Rambo.run(path, step.args, log: true)
-  end
+  defdelegate run_step(step), to: StepRunner
 end
