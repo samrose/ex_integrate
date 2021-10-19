@@ -3,13 +3,21 @@ defmodule ExIntegrate do
   Documentation for `ExIntegrate`.
   """
 
-  def run_steps(file) do
-    steps = Jason.decode!(File.read!(file))
-    steps
-    |> Map.get("steps")
-    |> Enum.each(fn x->
-        path = System.find_executable(x["command"])
-        Rambo.run(path,x["args"], log: true)
-    end)
+  alias ExIntegrate.Step
+
+  def run_steps(filename) when is_binary(filename) do
+    config_json =
+      filename
+      |> File.read!()
+      |> Jason.decode!()
+
+    steps = Enum.map(config_json["steps"], &Step.new/1)
+
+    Enum.each(steps, &run_step/1)
+  end
+
+  def run_step(%Step{} = step) do
+    path = System.find_executable(step.command)
+    Rambo.run(path, step.args, log: true)
   end
 end
