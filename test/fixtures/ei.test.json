@@ -1,10 +1,15 @@
 {
-  "steps": [
-     {
-      "name": "test",
-      "command": "echo",
-      "args": [
-        "TEST"
+  "pipelines": [
+    {
+      "name": "foo",
+      "steps": [
+        {
+          "name": "test",
+          "command": "echo",
+          "args": [
+            "TEST"
+          ]
+        }
       ]
     }
   ]
