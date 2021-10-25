@@ -10,8 +10,10 @@ defmodule ExIntegrate do
   @spec run_steps(filename :: binary) :: :ok
   def run_steps(filename) when is_binary(filename) do
     config = import_json(filename)
-
-    steps = Enum.map(config.steps, &Step.new/1)
+    steps = Enum.map(config.pipelines, fn(x)->
+      Enum.map(x["steps"], &Step.new/1)
+    end)
+    |> List.flatten
     Enum.each(steps, &run_step/1)
     :ok
   end
@@ -24,6 +26,6 @@ defmodule ExIntegrate do
       |> File.read!()
       |> Jason.decode!()
 
-    %Config{steps: config_json["steps"]}
+    %Config{pipelines: config_json["pipelines"]}
   end
 end
