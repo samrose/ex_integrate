@@ -1,9 +1,9 @@
 defmodule ExIntegrate.Config do
-  alias ExIntegrate.Step
+  alias ExIntegrate.Pipeline
 
   @type t :: %__MODULE__{
-    steps: [Step.t()]
+    pipelines: [Pipeline.t()]
   }
 
-  defstruct [:steps]
+  defstruct [:pipelines]
 end
