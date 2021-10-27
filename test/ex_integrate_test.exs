@@ -7,19 +7,19 @@ defmodule ExIntegrateTest do
 
   describe "running the steps" do
     test "success: returns :ok" do
-      assert :ok = ExIntegrate.run_steps(@config_fixture_path)
+      assert :ok = ExIntegrate.run_pipelines(@config_fixture_path)
     end
 
     test "when file doesn't exist, raises error" do
       assert_raise File.Error,
-                   fn -> ExIntegrate.run_steps("nonexistant_file") end
+                   fn -> ExIntegrate.run_pipelines("nonexistant_file") end
     end
 
     for invalid_input <- [123, :not_a_string, nil] do
       test "rejects non-binary input for #{invalid_input}" do
         assert_raise FunctionClauseError, fn ->
           invalid_input = Macro.escape(unquote(invalid_input))
-          ExIntegrate.run_steps(invalid_input)
+          ExIntegrate.run_pipelines(invalid_input)
         end
       end
     end

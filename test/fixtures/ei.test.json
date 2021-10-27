@@ -11,6 +11,18 @@
           ]
         }
       ]
+    },
+    {
+      "name": "bar",
+      "steps": [
+        {
+          "name": "test",
+          "command": "echo",
+          "args": [
+            "TEST2"
+          ]
+        }
+      ]
     }
   ]
 }
