@@ -23,7 +23,12 @@
 	      "args": [
 		"compile"
 	      ]
-	    },
+	    }
+	  ]
+      },
+      {
+	"name": "exintegrate_test",
+	  "steps": [
 	    {
 	      "name": "compile",
 	      "command": "mix",
@@ -35,3 +40,4 @@
       }
   ]
 }
+
