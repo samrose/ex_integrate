@@ -7,7 +7,7 @@ defmodule ExIntegrateTest do
 
   describe "running the steps" do
     test "success: returns :ok" do
-      assert :error = ExIntegrate.run_pipelines(@config_fixture_path)
+      assert :ok = ExIntegrate.run_pipelines(@config_fixture_path)
     end
 
     test "when file doesn't exist, raises error" do
