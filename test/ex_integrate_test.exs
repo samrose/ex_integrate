@@ -27,19 +27,21 @@ defmodule ExIntegrateTest do
   end
 
   describe "touching a tmp file" do
-    setup do
-      tmp_dir_path = Path.join([System.tmp_dir!(), "ei_test"])
-      File.mkdir!(tmp_dir_path)
-      on_exit(fn -> File.rm_rf!(tmp_dir_path) end)
-
-      {:ok, tmp_dir_path: tmp_dir_path}
-    end
+    setup :create_tmp_dir
 
     test "success: creates the file", %{tmp_dir_path: tmp_dir_path} do
       path = Path.join([tmp_dir_path, "ei_test.txt"])
       step = Step.new(%{"name" => "create_tmp_file", "command" => "touch", "args" => [path]})
       assert {:ok, _} = ExIntegrate.run_step(step)
       assert {:ok, _} = File.read(path)
+    end
+
+    defp create_tmp_dir(_context) do
+      tmp_dir_path = Path.join([System.tmp_dir!(), "ei_test"])
+      File.mkdir!(tmp_dir_path)
+      on_exit(fn -> File.rm_rf!(tmp_dir_path) end)
+
+      [tmp_dir_path: tmp_dir_path]
     end
   end
 end
