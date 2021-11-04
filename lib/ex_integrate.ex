@@ -10,14 +10,19 @@ defmodule ExIntegrate do
   @spec run_pipelines(filename :: binary) :: :ok
   def run_pipelines(filename) when is_binary(filename) do
     config = import_json(filename)
-    Enum.map(config.pipelines, fn(x)->
+
+    Enum.map(config.pipelines, fn x ->
       steps = Enum.map(x["steps"], &Step.new/1)
-      pipeline_task = Task.async(fn ->
-        Enum.each(steps, &run_step/1)
-      end)
+
+      pipeline_task =
+        Task.async(fn ->
+          Enum.each(steps, &run_step/1)
+        end)
+
       Task.await(pipeline_task)
     end)
-    :ok
+
+    {:ok, config}
   end
 
   defdelegate run_step(step), to: StepRunner
