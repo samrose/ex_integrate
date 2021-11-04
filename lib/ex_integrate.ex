@@ -5,14 +5,17 @@ defmodule ExIntegrate do
 
   alias ExIntegrate.Config
   alias ExIntegrate.Pipeline
-  alias ExIntegrate.Step
   alias ExIntegrate.StepRunner
 
-  @spec run_pipelines(filename :: binary) :: {:ok, Config.t()}
-  def run_pipelines(filename) when is_binary(filename) do
+  @spec run_pipelines_from_file(filename :: binary) :: {:ok, Config.t()}
+  def run_pipelines_from_file(filename) do
     params = import_json(filename)
-    %Config{} = config = parse_config_params(params)
+    run_pipelines(params)
+  end
 
+  @spec run_pipelines(map) :: {:ok, Config.t()}
+  def run_pipelines(params) when is_map(params) do
+    config = Config.new(params)
     Enum.each(config.pipelines, &Pipeline.run/1)
 
     {:ok, config}
@@ -21,13 +24,8 @@ defmodule ExIntegrate do
   defdelegate run_step(step), to: StepRunner
 
   defp import_json(filename) do
-    config_json =
-      filename
-      |> File.read!()
-      |> Jason.decode!()
-  end
-
-  defp parse_config_params(params) do
-    Config.new(params)
+    filename
+    |> File.read!()
+    |> Jason.decode!()
   end
 end
