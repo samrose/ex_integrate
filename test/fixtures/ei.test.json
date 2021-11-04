@@ -6,17 +6,23 @@
         {
           "name": "step 1",
           "command": "echo",
-          "args": ["step 1"]
+          "args": [
+            "step 1"
+          ]
         },
         {
           "name": "step 2",
           "command": "echo",
-          "args": ["step 2"]
+          "args": [
+            "step 2"
+          ]
         },
         {
           "name": "step 3",
           "command": "echo",
-          "args": ["step 3"]
+          "args": [
+            "step 3"
+          ]
         }
       ]
     }

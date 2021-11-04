@@ -5,22 +5,14 @@ defmodule ExIntegrate do
 
   alias ExIntegrate.Step
   alias ExIntegrate.StepRunner
+  alias ExIntegrate.Pipeline
   alias ExIntegrate.Config
 
-  @spec run_pipelines(filename :: binary) :: :ok
+  @spec run_pipelines(filename :: binary) :: {:ok, Config.t()}
   def run_pipelines(filename) when is_binary(filename) do
     config = import_json(filename)
 
-    Enum.map(config.pipelines, fn pipeline ->
-      steps = Enum.map(pipeline["steps"], &Step.new/1)
-
-      pipeline_task =
-        Task.async(fn ->
-          Enum.each(steps, &run_step/1)
-        end)
-
-      Task.await(pipeline_task)
-    end)
+    Enum.each(config.pipelines, &Pipeline.run/1)
 
     {:ok, config}
   end
@@ -33,6 +25,14 @@ defmodule ExIntegrate do
       |> File.read!()
       |> Jason.decode!()
 
-    %Config{pipelines: config_json["pipelines"]}
+    pipelines =
+      config_json
+      |> Access.get("pipelines", [])
+      |> Enum.map(fn pipeline_attrs ->
+        steps = Enum.map(pipeline_attrs["steps"], &Step.new/1)
+        %Pipeline{steps: steps}
+      end)
+
+    %Config{pipelines: pipelines}
   end
 end
