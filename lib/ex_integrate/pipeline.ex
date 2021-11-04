@@ -1,4 +1,4 @@
-defmodule ExIntegrate.Piepline do
+defmodule ExIntegrate.Pipeline do
   alias ExIntegrate.Step
 
   @type t :: %__MODULE__{
