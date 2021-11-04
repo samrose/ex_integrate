@@ -6,4 +6,8 @@ defmodule ExIntegrate.Config do
   }
 
   defstruct [:pipelines]
+
+  def new(attrs) do
+    struct!(__MODULE__, attrs)
+  end
 end
