@@ -5,7 +5,6 @@ defmodule ExIntegrate do
 
   alias ExIntegrate.Config
   alias ExIntegrate.Pipeline
-  alias ExIntegrate.StepRunner
 
   @spec run_pipelines_from_file(filename :: binary) :: {:ok, Config.t()}
   def run_pipelines_from_file(filename) do
@@ -20,8 +19,6 @@ defmodule ExIntegrate do
 
     {:ok, config}
   end
-
-  defdelegate run_step(step), to: StepRunner
 
   defp import_json(filename) do
     filename
