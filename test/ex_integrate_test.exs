@@ -2,12 +2,13 @@ defmodule ExIntegrateTest do
   use ExUnit.Case
   doctest ExIntegrate
   alias ExIntegrate.Step
+  alias ExIntegrate.Config
 
   @config_fixture_path "test/fixtures/ei.test.json"
 
   describe "running the steps" do
     test "success: returns :ok" do
-      assert :ok = ExIntegrate.run_pipelines(@config_fixture_path)
+      assert {:ok, %Config{}} = ExIntegrate.run_pipelines(@config_fixture_path)
     end
 
     test "when file doesn't exist, raises error" do
