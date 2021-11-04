@@ -10,7 +10,9 @@ defmodule ExIntegrate do
 
   @spec run_pipelines(filename :: binary) :: {:ok, Config.t()}
   def run_pipelines(filename) when is_binary(filename) do
-    config = import_json(filename)
+    %Config{} = config =
+      import_json(filename)
+      |> parse_config_params()
 
     Enum.each(config.pipelines, &Pipeline.run/1)
 
@@ -24,9 +26,11 @@ defmodule ExIntegrate do
       filename
       |> File.read!()
       |> Jason.decode!()
+  end
 
+  defp parse_config_params(config_params) do
     pipelines =
-      config_json
+      config_params
       |> Access.get("pipelines", [])
       |> Enum.map(fn pipeline_attrs ->
         steps = Enum.map(pipeline_attrs["steps"], &Step.new/1)
