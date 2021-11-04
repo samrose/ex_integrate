@@ -4,23 +4,19 @@
       "name": "foo",
       "steps": [
         {
-          "name": "test",
+          "name": "step 1",
           "command": "echo",
-          "args": [
-            "TEST"
-          ]
-        }
-      ]
-    },
-    {
-      "name": "bar",
-      "steps": [
+          "args": ["step 1"]
+        },
         {
-          "name": "test",
+          "name": "step 2",
           "command": "echo",
-          "args": [
-            "TEST2"
-          ]
+          "args": ["step 2"]
+        },
+        {
+          "name": "step 3",
+          "command": "echo",
+          "args": ["step 3"]
         }
       ]
     }
