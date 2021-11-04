@@ -11,8 +11,8 @@ defmodule ExIntegrate do
   def run_pipelines(filename) when is_binary(filename) do
     config = import_json(filename)
 
-    Enum.map(config.pipelines, fn x ->
-      steps = Enum.map(x["steps"], &Step.new/1)
+    Enum.map(config.pipelines, fn pipeline ->
+      steps = Enum.map(pipeline["steps"], &Step.new/1)
 
       pipeline_task =
         Task.async(fn ->
