@@ -7,18 +7,18 @@ defmodule ExIntegrateTest do
 
   @config_fixture_path "test/fixtures/ei.test.json"
 
-  describe "running the steps" do
+  describe "running the steps from a config file" do
     test "success: runs pipeline steps in order and returns :ok" do
-      run_pipelines = fn ->
-        assert {:ok, %Config{}} = ExIntegrate.run_pipelines(@config_fixture_path)
+      run_pipelines_from_file = fn ->
+        assert {:ok, %Config{}} = ExIntegrate.run_pipelines_from_file(@config_fixture_path)
       end
 
-      assert capture_io(run_pipelines) == "step 1\nstep 2\nstep 3\n"
+      assert capture_io(run_pipelines_from_file) == "step 1\nstep 2\nstep 3\n"
     end
 
     test "when file doesn't exist, raises error" do
       assert_raise File.Error,
-                   fn -> ExIntegrate.run_pipelines("nonexistant_file") end
+                   fn -> ExIntegrate.run_pipelines_from_file("nonexistant_file") end
     end
   end
 
