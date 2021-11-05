@@ -11,13 +11,13 @@ defmodule ExIntegrate.StepRunner do
 
     case do_run_step(step, path) do
       {:ok, %{status: status}} when status !== 0 ->
-        {:error, :error}
+        {:error, %Step.Error{reason: :nonzero_status}}
 
       {:ok, result} ->
         {:ok, result}
 
-      {:error, error} ->
-        {:error, error}
+      {:error, reason} ->
+        {:error, %Step.Error{reason: :something, message: reason}}
     end
   end
 
