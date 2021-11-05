@@ -17,7 +17,7 @@ defmodule ExIntegrate.StepRunner do
         {:ok, result}
 
       {:error, reason} ->
-        {:error, %Step.Error{reason: :something, message: reason}}
+        {:error, %Step.Error{reason: :unknown, message: reason}}
     end
   end
 
