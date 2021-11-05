@@ -3,27 +3,32 @@ defmodule ExIntegrate.Pipeline do
   alias ExIntegrate.StepRunner
 
   @type t :: %__MODULE__{
-          steps: [Step.t()]
+          failed?: binary,
+          steps: [Step.t()],
+          completed_steps: [Step.t()],
+          remaining_steps: [Step.t()]
         }
 
-  defstruct [:steps, :failed?]
+  defstruct [:steps, :failed?, :completed_steps, :remaining_steps]
 
+  @spec run(t()) :: t()
   def run(%__MODULE__{} = pipeline) do
-    pipeline_task =
-      Task.async(fn ->
-        Enum.map(pipeline.steps, &StepRunner.run_step/1)
-      end)
+    Enum.reduce(pipeline.steps, pipeline, fn step, acc ->
+      case StepRunner.run_step(step) do
+        {:ok, step} ->
+          complete_step(acc, step)
 
-    results = Task.await(pipeline_task)
-
-    if Enum.any?(results, &failed_step?/1) do
-      %{pipeline | failed?: true}
-    else
-      %{pipeline | failed?: false}
-    end
+        {:error, _error} ->
+          acc
+          |> complete_step(step)
+          |> fail()
+      end
+    end)
   end
 
-  defp failed_step?(step_result) do
-    match?({:error, _}, step_result)
-  end
+  def complete_step(%__MODULE__{} = pipeline, %Step{} = step),
+    do: %{pipeline | completed_steps: [step] ++ pipeline.completed_steps}
+
+  def fail(%__MODULE__{} = pipeline),
+    do: %{pipeline | failed?: true}
 end

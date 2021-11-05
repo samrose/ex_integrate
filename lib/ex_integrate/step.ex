@@ -7,14 +7,24 @@ defmodule ExIntegrate.Step do
     defexception [:message, :reason]
   end
 
-  @enforce_keys [:name, :command]
-  defstruct [:name, :command, args: [], command_data: nil]
+  @enforce_keys [:name, :command, :args]
+
+  defstruct [
+    :args,
+    :command,
+    :name,
+    err: nil,
+    out: nil,
+    status: :not_run
+  ]
 
   @type t :: %__MODULE__{
           args: [String.t()],
           command: :String.t(),
-          command_data: Rambo.t(),
-          name: String.t()
+          name: String.t(),
+          status: atom,
+          err: String.t(),
+          out: String.t()
         }
 
   def new(attrs) when is_map(attrs) do
