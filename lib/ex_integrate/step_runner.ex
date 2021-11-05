@@ -5,7 +5,7 @@ defmodule ExIntegrate.StepRunner do
 
   alias ExIntegrate.Step
 
-  @spec run_step(Step.t()) :: {:ok, term} | {:error, term}
+  @spec run_step(Step.t()) :: {:ok, Step.t()} | {:error, Step.Error.t()}
   def run_step(%Step{} = step) do
     path = System.find_executable(step.command)
 
@@ -13,8 +13,8 @@ defmodule ExIntegrate.StepRunner do
       {:ok, %{status: status}} when status !== 0 ->
         {:error, %Step.Error{reason: :nonzero_status}}
 
-      {:ok, result} ->
-        {:ok, result}
+      {:ok, %{status: status, out: out, err: err}} ->
+        {:ok, %{step | status: status, out: out, err: err}}
 
       {:error, reason} ->
         {:error, %Step.Error{reason: :unknown, message: reason}}
