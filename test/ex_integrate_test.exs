@@ -22,6 +22,28 @@ defmodule ExIntegrateTest do
     end
   end
 
+  describe "handling step failure" do
+    @failing_script "test/fixtures/error_1.sh"
+
+    test "returns error tuple" do
+      config_params = %{
+        "pipelines" => [
+          %{
+            "steps" => [
+              %{
+                "name" => "failing step",
+                "command" => "bash",
+                "args" => [@failing_script]
+              }
+            ]
+          }
+        ]
+      }
+
+      assert {:error, _} = ExIntegrate.run_pipelines(config_params)
+    end
+  end
+
   describe "touching a tmp file" do
     setup :create_tmp_dir
 
