@@ -15,9 +15,14 @@ defmodule ExIntegrate do
   @spec run_pipelines(map) :: {:ok, Config.t()}
   def run_pipelines(params) when is_map(params) do
     config = Config.new(params)
-    Enum.each(config.pipelines, &Pipeline.run/1)
 
-    {:ok, config}
+    results = Enum.map(config.pipelines, &Pipeline.run/1)
+
+    if Enum.any?(results, fn pipeline -> pipeline.failed? end) do
+      {:error, %{config | pipelines: results}}
+    else
+      {:ok, %{config | pipelines: results}}
+    end
   end
 
   defp import_json(filename) do

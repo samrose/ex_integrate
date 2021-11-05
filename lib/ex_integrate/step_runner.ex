@@ -10,8 +10,14 @@ defmodule ExIntegrate.StepRunner do
     path = System.find_executable(step.command)
 
     case do_run_step(step, path) do
-      {:ok, result} -> {:ok, result}
-      {:error, error} -> {:error, error}
+      {:ok, %{status: status}} when status !== 0 ->
+        {:error, :error}
+
+      {:ok, result} ->
+        {:ok, result}
+
+      {:error, error} ->
+        {:error, error}
     end
   end
 

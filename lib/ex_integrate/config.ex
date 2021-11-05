@@ -5,8 +5,8 @@ defmodule ExIntegrate.Config do
   defstruct [:pipelines]
 
   @type t :: %__MODULE__{
-    pipelines: [Pipeline.t()]
-  }
+          pipelines: [Pipeline.t()]
+        }
 
   @spec new(attrs :: map) :: t()
   def new(attrs) do
