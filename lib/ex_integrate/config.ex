@@ -2,12 +2,13 @@ defmodule ExIntegrate.Config do
   alias ExIntegrate.Pipeline
   alias ExIntegrate.Step
 
+  defstruct [:pipelines]
+
   @type t :: %__MODULE__{
     pipelines: [Pipeline.t()]
   }
 
-  defstruct [:pipelines]
-
+  @spec new(attrs :: map) :: t()
   def new(attrs) do
     pipelines =
       attrs
