@@ -3,10 +3,6 @@ defmodule ExIntegrate.Step do
   Represents a step in the CI pipeline. 
   """
 
-  defmodule Error do
-    defexception [:message, :reason]
-  end
-
   @enforce_keys [:name, :command, :args]
 
   defstruct [
