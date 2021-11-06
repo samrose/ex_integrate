@@ -10,11 +10,11 @@ defmodule ExIntegrate.StepRunner do
     path = System.find_executable(step.command)
 
     case do_run_step(step, path) do
-      {:ok, %{status: status}} when status !== 0 ->
+      {:ok, %{status: status_code}} when status_code !== 0 ->
         {:error, %Step.Error{reason: :nonzero_status}}
 
-      {:ok, %{status: status, out: out, err: err}} ->
-        {:ok, %{step | status: status, out: out, err: err}}
+      {:ok, %{status: status_code, out: out, err: err}} ->
+        {:ok, %{step | status_code: status_code, out: out, err: err}}
 
       {:error, reason} ->
         {:error, %Step.Error{reason: :unknown, message: reason}}
