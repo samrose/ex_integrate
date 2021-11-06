@@ -3,7 +3,7 @@ defmodule ExIntegrate do
   Documentation for `ExIntegrate`.
   """
 
-  alias ExIntegrate.Config
+  alias ExIntegrate.Core.Config
   alias ExIntegrate.Core.Pipeline
 
   @spec run_pipelines_from_file(filename :: binary) :: {:ok, Config.t()}

@@ -1,4 +1,4 @@
-defmodule ExIntegrate.Config do
+defmodule ExIntegrate.Core.Config do
   alias ExIntegrate.Core.Pipeline
   alias ExIntegrate.Core.Step
 
