@@ -5,7 +5,7 @@ defmodule ExIntegrate.StepRunner do
 
   alias ExIntegrate.Step
 
-  @spec run_step(Step.t()) :: {:ok, Step.t()} | {:error, Step.Error.t()}
+  @spec run_step(Step.t()) :: {:ok, Step.t()} | {:error, Step.t()}
   def run_step(%Step{} = step) do
     path = System.find_executable(step.command)
 
