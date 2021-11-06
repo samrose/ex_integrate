@@ -1,6 +1,6 @@
-defmodule ExIntegrate.Boundary.Runner do
+defmodule ExIntegrate.Boundary.PipelineRunner do
   @moduledoc """
-  `Runner` is responsible for running steps and reporting their results.
+  Responsible for running steps and reporting their results.
   """
 
   alias __MODULE__
@@ -10,7 +10,7 @@ defmodule ExIntegrate.Boundary.Runner do
   @spec run_pipeline(Pipeline.t()) :: Pipeline.t()
   def run_pipeline(%Pipeline{} = pipeline) do
     Enum.reduce(pipeline.steps, pipeline, fn step, acc ->
-      case Runner.run_step(step) do
+      case PipelineRunner.run_step(step) do
         {:ok, step} ->
           Pipeline.complete_step(acc, step)
 
