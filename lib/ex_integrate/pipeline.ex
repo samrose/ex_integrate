@@ -4,11 +4,10 @@ defmodule ExIntegrate.Core.Pipeline do
   @type t :: %__MODULE__{
           failed?: binary,
           steps: [Step.t()],
-          completed_steps: [Step.t()],
-          remaining_steps: [Step.t()]
+          completed_steps: [Step.t()]
         }
 
-  defstruct [:steps, :failed?, :completed_steps, :remaining_steps]
+  defstruct [:steps, :failed?, :completed_steps]
 
   def complete_step(%__MODULE__{} = pipeline, %Step{} = step),
     do: %{pipeline | completed_steps: [step] ++ pipeline.completed_steps}
