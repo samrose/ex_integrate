@@ -1,6 +1,6 @@
 defmodule ExIntegrate.Core.Pipeline do
   alias ExIntegrate.Core.Step
-  alias ExIntegrate.Boundary.StepRunner
+  alias ExIntegrate.Boundary.Runner
 
   @type t :: %__MODULE__{
           failed?: binary,
@@ -14,7 +14,7 @@ defmodule ExIntegrate.Core.Pipeline do
   @spec run(t()) :: t()
   def run(%__MODULE__{} = pipeline) do
     Enum.reduce(pipeline.steps, pipeline, fn step, acc ->
-      case StepRunner.run_step(step) do
+      case Runner.run_step(step) do
         {:ok, step} ->
           complete_step(acc, step)
 
