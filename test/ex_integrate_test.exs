@@ -2,7 +2,7 @@ defmodule ExIntegrateTest do
   use ExUnit.Case
   import ExUnit.CaptureIO
 
-  alias ExIntegrate.Step
+  alias ExIntegrate.Core.Step
   alias ExIntegrate.Config
 
   @config_fixture_path "test/fixtures/ei.test.json"

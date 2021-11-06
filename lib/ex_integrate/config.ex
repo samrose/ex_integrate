@@ -1,6 +1,6 @@
 defmodule ExIntegrate.Config do
   alias ExIntegrate.Core.Pipeline
-  alias ExIntegrate.Step
+  alias ExIntegrate.Core.Step
 
   defstruct [:pipelines]
 

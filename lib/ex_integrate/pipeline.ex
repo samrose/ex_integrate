@@ -1,5 +1,5 @@
 defmodule ExIntegrate.Core.Pipeline do
-  alias ExIntegrate.Step
+  alias ExIntegrate.Core.Step
   alias ExIntegrate.StepRunner
 
   @type t :: %__MODULE__{
