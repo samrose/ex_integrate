@@ -4,7 +4,7 @@ defmodule ExIntegrate do
   """
 
   alias ExIntegrate.Config
-  alias ExIntegrate.Pipeline
+  alias ExIntegrate.Core.Pipeline
 
   @spec run_pipelines_from_file(filename :: binary) :: {:ok, Config.t()}
   def run_pipelines_from_file(filename) do
