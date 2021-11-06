@@ -1,4 +1,4 @@
-defmodule ExIntegrate.Pipeline do
+defmodule ExIntegrate.Core.Pipeline do
   alias ExIntegrate.Step
   alias ExIntegrate.StepRunner
 
