@@ -1,4 +1,4 @@
-defmodule ExIntegrate.StepRunner do
+defmodule ExIntegrate.Boundary.StepRunner do
   @moduledoc """
   `StepRunner` is responsible for running steps and reporting their results.
   """

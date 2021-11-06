@@ -1,6 +1,6 @@
 defmodule ExIntegrate.Core.Pipeline do
   alias ExIntegrate.Core.Step
-  alias ExIntegrate.StepRunner
+  alias ExIntegrate.Boundary.StepRunner
 
   @type t :: %__MODULE__{
           failed?: binary,
