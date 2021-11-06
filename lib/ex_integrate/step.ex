@@ -15,16 +15,16 @@ defmodule ExIntegrate.Step do
     :name,
     err: nil,
     out: nil,
-    status: :not_run
+    status_code: nil
   ]
 
   @type t :: %__MODULE__{
           args: [String.t()],
           command: :String.t(),
-          name: String.t(),
-          status: atom,
           err: String.t(),
-          out: String.t()
+          name: String.t(),
+          out: String.t(),
+          status_code: non_neg_integer,
         }
 
   def new(attrs) when is_map(attrs) do
