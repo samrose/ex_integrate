@@ -4,17 +4,17 @@ defmodule ExIntegrate do
   """
 
   alias ExIntegrate.Boundary.Runner
-  alias ExIntegrate.Core.Config
+  alias ExIntegrate.Core.Run
 
-  @spec run_pipelines_from_file(filename :: binary) :: {:ok, Config.t()}
+  @spec run_pipelines_from_file(filename :: binary) :: {:ok, Run.t()}
   def run_pipelines_from_file(filename) do
     params = import_json(filename)
     run_pipelines(params)
   end
 
-  @spec run_pipelines(map) :: {:ok, Config.t()}
+  @spec run_pipelines(map) :: {:ok, Run.t()}
   def run_pipelines(params) when is_map(params) do
-    config = Config.new(params)
+    config = Run.new(params)
 
     results = Enum.map(config.pipelines, &Runner.run_pipeline/1)
 

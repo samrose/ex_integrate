@@ -3,14 +3,14 @@ defmodule ExIntegrateTest do
   import ExUnit.CaptureIO
 
   alias ExIntegrate.Core.Step
-  alias ExIntegrate.Core.Config
+  alias ExIntegrate.Core.Run
 
   @config_fixture_path "test/fixtures/ei.test.json"
 
   describe "running the steps from a config file" do
     test "success: runs pipeline steps in order and returns :ok" do
       run_pipelines_from_file = fn ->
-        assert {:ok, %Config{}} = ExIntegrate.run_pipelines_from_file(@config_fixture_path)
+        assert {:ok, %Run{}} = ExIntegrate.run_pipelines_from_file(@config_fixture_path)
       end
 
       assert capture_io(run_pipelines_from_file) == "step 1\nstep 2\nstep 3\n"
