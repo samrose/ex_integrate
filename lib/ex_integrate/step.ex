@@ -24,7 +24,7 @@ defmodule ExIntegrate.Step do
           err: String.t(),
           name: String.t(),
           out: String.t(),
-          status_code: non_neg_integer,
+          status_code: non_neg_integer
         }
 
   def new(attrs) when is_map(attrs) do
@@ -33,5 +33,9 @@ defmodule ExIntegrate.Step do
       command: attrs["command"],
       name: attrs["name"]
     }
+  end
+
+  def save_results(%__MODULE__{} = step, status_code, out, err) do
+    %{step | status_code: status_code, out: out, err: err}
   end
 end
