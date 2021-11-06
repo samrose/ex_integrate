@@ -50,7 +50,7 @@ defmodule ExIntegrateTest do
     test "success: creates the file", %{tmp_dir_path: tmp_dir_path} do
       path = Path.join([tmp_dir_path, "ei_test.txt"])
       step = Step.new(%{"name" => "create_tmp_file", "command" => "touch", "args" => [path]})
-      assert {:ok, _} = ExIntegrate.StepRunner.run_step(step)
+      assert {:ok, _} = ExIntegrate.Boundary.StepRunner.run_step(step)
       assert {:ok, _} = File.read(path)
     end
 
