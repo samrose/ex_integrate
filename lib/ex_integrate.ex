@@ -3,8 +3,8 @@ defmodule ExIntegrate do
   Documentation for `ExIntegrate`.
   """
 
+  alias ExIntegrate.Boundary.Runner
   alias ExIntegrate.Core.Config
-  alias ExIntegrate.Core.Pipeline
 
   @spec run_pipelines_from_file(filename :: binary) :: {:ok, Config.t()}
   def run_pipelines_from_file(filename) do
@@ -16,7 +16,7 @@ defmodule ExIntegrate do
   def run_pipelines(params) when is_map(params) do
     config = Config.new(params)
 
-    results = Enum.map(config.pipelines, &Pipeline.run/1)
+    results = Enum.map(config.pipelines, &Runner.run_pipeline/1)
 
     if Enum.any?(results, fn pipeline -> pipeline.failed? end) do
       {:error, %{config | pipelines: results}}
