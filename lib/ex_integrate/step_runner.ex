@@ -3,7 +3,7 @@ defmodule ExIntegrate.StepRunner do
   `StepRunner` is responsible for running steps and reporting their results.
   """
 
-  alias ExIntegrate.Step
+  alias ExIntegrate.Core.Step
 
   @spec run_step(Step.t()) :: {:ok, Step.t()} | {:error, Step.t()}
   def run_step(%Step{} = step) do

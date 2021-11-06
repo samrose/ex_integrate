@@ -1,4 +1,4 @@
-defmodule ExIntegrate.Step do
+defmodule ExIntegrate.Core.Step do
   @moduledoc """
   Represents a step in the CI pipeline. 
   """
