@@ -29,12 +29,17 @@ defmodule ExIntegrate.Core.Pipeline do
 
   def steps(%__MODULE__{} = pipeline), do: pipeline.steps
 
+  def put_step(%__MODULE__{} = pipeline, %Step{} = old_step, %Step{} = new_step) do
+    i = pipeline |> steps |> Enum.find_index(fn step -> step.name == old_step.name end)
+
+    pipeline
+    |> steps()
+    |> List.replace_at(i, new_step)
+  end
+
   @impl Access
   def fetch(%__MODULE__{} = pipeline, step_name) when is_binary(step_name) do
-    step =
-      pipeline
-      |> steps()
-      |> Enum.find(fn step -> step.name == step_name end)
+    step = pipeline |> steps() |> Enum.find(fn step -> step.name == step_name end)
 
     {:ok, step}
   end
