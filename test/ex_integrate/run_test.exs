@@ -3,6 +3,7 @@ defmodule ExIntegrate.RunTest do
 
   alias ExIntegrate.Core.Run
   alias ExIntegrate.Core.Pipeline
+  alias ExIntegrate.Core.Step
 
   @valid_params %{
     "pipelines" => [
@@ -37,8 +38,18 @@ defmodule ExIntegrate.RunTest do
            """
   end
 
-  test "checks if a pipeline has failed" do
+  test "checks if a run has failed" do
     run = Run.new(@valid_params)
     refute Run.failed?(run)
+
+    pipeline = run |> Run.pipelines() |> hd()
+
+    failed_pipeline = %Pipeline{
+      name: "a failed pipeline",
+      steps: [%Step{status_code: 1, name: "a failed step", command: "foo", args: []}]
+    }
+
+    failed_run = Run.put_pipeline(run, pipeline, failed_pipeline)
+    assert Run.failed?(failed_run), "Expected run to have failed.\n\n#{inspect(failed_run)}"
   end
 end

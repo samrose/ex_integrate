@@ -49,11 +49,14 @@ defmodule ExIntegrate.Core.Run do
     Graph.has_vertex?(run.pipeline_graph, pipeline)
   end
 
+  @spec failed?(t()) :: boolean
   def failed?(%__MODULE__{} = run) do
     run
     |> pipelines()
-    |> Enum.any?(& &1.failed?)
+    |> Enum.any?(&Pipeline.failed?/1)
   end
 
-  defp pipelines(run), do: Graph.vertices(run.pipeline_graph)
+  @spec pipelines(t()) :: [Pipeline.t()]
+  def pipelines(%__MODULE__{} = run),
+    do: Graph.vertices(run.pipeline_graph)
 end
