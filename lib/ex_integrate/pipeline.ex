@@ -1,6 +1,8 @@
 defmodule ExIntegrate.Core.Pipeline do
   alias ExIntegrate.Core.Step
 
+  @behaviour Access
+
   @enforce_keys [:name, :steps]
   defstruct @enforce_keys ++ [failed?: false, completed_steps: []]
 
@@ -19,4 +21,16 @@ defmodule ExIntegrate.Core.Pipeline do
 
   def failed?(%__MODULE__{} = pipeline),
     do: Enum.any?(pipeline.steps, &Step.failed?/1)
+
+  def steps(%__MODULE__{} = pipeline), do: pipeline.steps
+
+  @impl Access
+  def fetch(%__MODULE__{} = pipeline, step_name) do
+    step =
+      pipeline
+      |> steps()
+      |> Enum.find(fn step -> step.name == step_name end)
+
+    {:ok, step}
+  end
 end
