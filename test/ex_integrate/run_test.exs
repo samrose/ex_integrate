@@ -5,22 +5,45 @@ defmodule ExIntegrate.RunTest do
   alias ExIntegrate.Core.Pipeline
   alias ExIntegrate.Core.Step
 
-  @valid_params %{
-    "pipelines" => [
+  @pipeline_params %{
+    "name" => "say hello",
+    "steps" => [
       %{
-        "steps" => [
-          %{
-            "name" => "say hello",
-            "command" => "echo",
-            "args" => ["hello world!"]
-          }
-        ]
+        "name" => "say hello",
+        "command" => "echo",
+        "args" => ["hello, "]
       }
     ]
   }
 
+  @dependent_pipeline_params %{
+    "depends_on" => "say hello",
+    "name" => "say world",
+    "steps" => [
+      %{
+        "name" => "say world",
+        "command" => "echo",
+        "args" => ["world!"]
+      }
+    ]
+  }
+
+  @run_params %{
+    "pipelines" => [@pipeline_params]
+  }
+
+  @dependent_run_params %{
+    "pipelines" => [@pipeline_params, @dependent_pipeline_params]
+  }
+
+  test "create a run with a dependent pipeline" do
+    run = Run.new(@dependent_run_params)
+    [pipeline1 | [pipeline2 | []]] = Run.pipelines(run)
+    assert [^pipeline2] = Graph.neighbors(run.pipeline_graph, pipeline1)
+  end
+
   test "update pipeline" do
-    assert %Run{} = run = Run.new(@valid_params)
+    run = Run.new(@run_params)
     assert pipeline = hd(run.pipelines)
     updated_pipeline = %Pipeline{name: "updated pipeline", steps: []}
 
@@ -39,7 +62,7 @@ defmodule ExIntegrate.RunTest do
   end
 
   test "checks if a run has failed" do
-    run = Run.new(@valid_params)
+    run = Run.new(@run_params)
     refute Run.failed?(run)
 
     pipeline = run |> Run.pipelines() |> hd()

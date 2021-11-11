@@ -13,21 +13,35 @@ defmodule ExIntegrate.Core.Run do
   @spec new(params :: map) :: t()
   def new(params) do
     pipelines =
-      params
-      |> Access.fetch!("pipelines")
+      params["pipelines"]
       |> Enum.map(fn pipeline_attrs ->
         steps = Enum.map(pipeline_attrs["steps"], &Step.new/1)
         %Pipeline{name: pipeline_attrs["name"], steps: steps}
       end)
 
-    pipeline_graph = set_up_pipeline_graph(pipelines)
+    pipeline_graph = set_up_pipeline_graph(params)
     struct!(__MODULE__, pipelines: pipelines, pipeline_graph: pipeline_graph)
   end
 
-  # TODO: set up edges
-  defp set_up_pipeline_graph(pipelines) do
-    Graph.new(type: :directed)
-    |> Graph.add_vertices(pipelines)
+  defp set_up_pipeline_graph(params) do
+    Enum.reduce(params["pipelines"], Graph.new(type: :directed), fn pipeline_attrs, graph ->
+      steps = Enum.map(pipeline_attrs["steps"], &Step.new/1)
+      pipeline = %Pipeline{name: pipeline_attrs["name"], steps: steps}
+
+      case pipeline_attrs["depends_on"] do
+        nil ->
+          Graph.add_vertex(graph, pipeline, [pipeline_attrs["name"]])
+
+        dependent_pipeline_name ->
+          dependent_pipeline =
+            graph
+            |> Graph.vertices()
+            |> Enum.find(fn pipeline -> pipeline.name == dependent_pipeline_name end)
+
+          edge = Graph.Edge.new(dependent_pipeline, pipeline)
+          Graph.add_edge(graph, edge)
+      end
+    end)
   end
 
   @doc """
