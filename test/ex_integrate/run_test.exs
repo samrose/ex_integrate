@@ -36,4 +36,9 @@ defmodule ExIntegrate.RunTest do
            #{inspect(pipeline)}.
            """
   end
+
+  test "checks if a pipeline has failed" do
+    run = Run.new(@valid_params)
+    refute Run.failed?(run)
+  end
 end

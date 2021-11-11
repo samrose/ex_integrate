@@ -48,4 +48,12 @@ defmodule ExIntegrate.Core.Run do
   def has_pipeline?(%__MODULE__{} = run, %Pipeline{} = pipeline) do
     Graph.has_vertex?(run.pipeline_graph, pipeline)
   end
+
+  def failed?(%__MODULE__{} = run) do
+    run.pipeline_graph
+    |> Graph.vertices()
+    |> Enum.any?(fn pipeline ->
+      pipeline.failed?
+    end)
+  end
 end
