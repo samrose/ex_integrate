@@ -1,6 +1,5 @@
 defmodule ExIntegrate.Core.Run do
   alias ExIntegrate.Core.Pipeline
-  alias ExIntegrate.Core.Step
 
   @behaviour Access
 
@@ -22,16 +21,12 @@ defmodule ExIntegrate.Core.Run do
   end
 
   defp set_up_pipeline_legacy(params) do
-    Enum.map(params["pipelines"], fn pipeline_attrs ->
-      steps = Enum.map(pipeline_attrs["steps"], &Step.new/1)
-      %Pipeline{name: pipeline_attrs["name"], steps: steps}
-    end)
+    Enum.map(params["pipelines"], &Pipeline.new/1)
   end
 
   defp set_up_pipeline_graph(params) do
     Enum.reduce(params["pipelines"], Graph.new(type: :directed), fn pipeline_attrs, graph ->
-      steps = Enum.map(pipeline_attrs["steps"], &Step.new/1)
-      pipeline = %Pipeline{name: pipeline_attrs["name"], steps: steps}
+      pipeline = Pipeline.new(pipeline_attrs)
 
       case pipeline_attrs["depends_on"] do
         nil ->
