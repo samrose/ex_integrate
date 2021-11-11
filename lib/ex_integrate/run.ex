@@ -50,10 +50,10 @@ defmodule ExIntegrate.Core.Run do
   end
 
   def failed?(%__MODULE__{} = run) do
-    run.pipeline_graph
-    |> Graph.vertices()
-    |> Enum.any?(fn pipeline ->
-      pipeline.failed?
-    end)
+    run
+    |> pipelines()
+    |> Enum.any?(& &1.failed?)
   end
+
+  defp pipelines(run), do: Graph.vertices(run.pipeline_graph)
 end
