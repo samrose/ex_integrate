@@ -39,14 +39,12 @@ defmodule ExIntegrate.Core.Pipeline do
 
   @impl Access
   def fetch(%__MODULE__{} = pipeline, step_name) when is_binary(step_name) do
-    step = pipeline |> steps() |> Enum.find(fn step -> step.name == step_name end)
-
-    {:ok, step}
+    {:ok, get_step_by_name(pipeline, step_name)}
   end
 
   @impl Access
   def get_and_update(%__MODULE__{} = pipeline, step_name, fun) when is_function(fun, 1) do
-    current = pipeline |> steps() |> Enum.find(fn step -> step.name == step_name end)
+    current = get_step_by_name(pipeline, step_name)
 
     case fun.(current) do
       {get, update} ->
@@ -58,6 +56,12 @@ defmodule ExIntegrate.Core.Pipeline do
       other ->
         raise "the given function must return a two-element tuple or :pop; got: #{inspect(other)}"
     end
+  end
+
+  def get_step_by_name(%__MODULE__{} = pipeline, step_name) do
+    pipeline
+    |> steps()
+    |> Enum.find(fn step -> step.name == step_name end)
   end
 
   @impl Access
