@@ -14,6 +14,17 @@ defmodule ExIntegrate.PipelineTest do
     step = %Step{name: "my step", command: "foo", args: []}
     pipeline = %Pipeline{name: "my pipeline", steps: [step]}
     updated_step = %{step | status_code: 0}
+
     assert Pipeline.put_step(pipeline, step, updated_step)
+  end
+
+  test "get and update a pipeline's step" do
+    step = %Step{name: "my step", command: "foo", args: []}
+    pipeline = %Pipeline{name: "my pipeline", steps: [step]}
+    updated_step = %{step | status_code: 0}
+
+    assert Pipeline.get_and_update(pipeline, step.name, fn current_step ->
+             {current_step, updated_step}
+           end)
   end
 end

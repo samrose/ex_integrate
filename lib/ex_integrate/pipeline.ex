@@ -43,4 +43,20 @@ defmodule ExIntegrate.Core.Pipeline do
 
     {:ok, step}
   end
+
+  @impl Access
+  def get_and_update(%__MODULE__{} = pipeline, step_name, fun) when is_function(fun, 1) do
+    current = pipeline |> steps() |> Enum.find(fn step -> step.name == step_name end)
+
+    case fun.(current) do
+      {get, update} ->
+        {get, put_step(pipeline, current, update)}
+
+      :pop ->
+        raise "cannot pop steps!"
+
+      other ->
+        raise "the given function must return a two-element tuple or :pop; got: #{inspect(other)}"
+    end
+  end
 end
