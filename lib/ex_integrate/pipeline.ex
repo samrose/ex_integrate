@@ -7,7 +7,7 @@ defmodule ExIntegrate.Core.Pipeline do
   defstruct @enforce_keys ++ [failed?: false, completed_steps: []]
 
   @type t :: %__MODULE__{
-          failed?: binary,
+          failed?: boolean,
           name: String.t(),
           steps: %{optional(non_neg_integer) => Step.t()},
           completed_steps: [Step.t()]
@@ -38,7 +38,7 @@ defmodule ExIntegrate.Core.Pipeline do
   end
 
   @impl Access
-  def fetch(%__MODULE__{} = pipeline, step_name) when is_binary(step_name) do
+  def fetch(%__MODULE__{} = pipeline, step_name) do
     {:ok, get_step_by_name(pipeline, step_name)}
   end
 
