@@ -1,5 +1,6 @@
 defmodule ExIntegrate.Core.Run do
   alias ExIntegrate.Core.Pipeline
+
   @behaviour Access
 
   @enforce_keys [:pipelines]
@@ -10,6 +11,8 @@ defmodule ExIntegrate.Core.Run do
           pipelines: Graph.t()
         }
 
+  @root_vertex :root
+
   @spec new(params :: map) :: t()
   def new(params) do
     pipelines = set_up_pipeline_graph(params)
@@ -18,17 +21,18 @@ defmodule ExIntegrate.Core.Run do
   end
 
   defp set_up_pipeline_graph(params) do
-    Enum.reduce(params["pipelines"], Graph.new(type: :directed), fn pipeline_attrs, graph ->
+    initial_graph = Graph.new(type: :directed) |> Graph.add_vertex(@root_vertex)
+
+    Enum.reduce(params["pipelines"], initial_graph, fn pipeline_attrs, graph ->
       pipeline = Pipeline.new(pipeline_attrs)
 
       case pipeline_attrs["depends_on"] do
         nil ->
-          Graph.add_vertex(graph, pipeline, [pipeline_attrs["name"]])
+          Graph.add_edge(graph, @root_vertex, pipeline, [pipeline_attrs["name"]])
 
         dependent_pipeline_name ->
           dependent_pipeline = look_up_pipeline(graph, dependent_pipeline_name)
-          edge = Graph.Edge.new(dependent_pipeline, pipeline)
-          Graph.add_edge(graph, edge)
+          Graph.add_edge(graph, dependent_pipeline, pipeline)
       end
     end)
   end
@@ -36,7 +40,10 @@ defmodule ExIntegrate.Core.Run do
   defp look_up_pipeline(pipeline_graph, pipeline_name) do
     pipeline_graph
     |> Graph.vertices()
-    |> Enum.find(fn pipeline -> pipeline.name == pipeline_name end)
+    |> Enum.find(fn
+      %{name: name} when name == pipeline_name -> true
+      _ -> false
+    end)
   end
 
   @doc """
@@ -86,7 +93,10 @@ defmodule ExIntegrate.Core.Run do
 
   @spec pipelines(t()) :: [Pipeline.t()]
   def pipelines(%__MODULE__{} = run),
-    do: Graph.vertices(run.pipelines)
+    do: Graph.vertices(run.pipelines) |> Enum.filter(&match?(%Pipeline{}, &1))
+
+  def get_pipeline_paths(%__MODULE__{} = run),
+    do: Graph.arborescence_root(run.pipelines)
 
   @impl Access
   def fetch(%__MODULE__{} = run, pipeline_name) do
