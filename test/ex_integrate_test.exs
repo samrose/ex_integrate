@@ -1,44 +1,88 @@
 defmodule ExIntegrateTest do
   use ExUnit.Case
-  doctest ExIntegrate
-  alias ExIntegrate.Step
+  import ExUnit.CaptureIO
+
+  alias ExIntegrate.Core.Pipeline
+  alias ExIntegrate.Core.Run
+  alias ExIntegrate.Core.Step
 
   @config_fixture_path "test/fixtures/ei.test.json"
 
-  describe "running the steps" do
-    test "success: returns :ok" do
-      assert :ok = ExIntegrate.run_steps(@config_fixture_path)
+  describe "running the steps from a config file" do
+    test "success: runs pipeline steps in order and returns success tuple" do
+      run_pipelines_from_file = fn ->
+        assert {:ok, %Run{}} = ExIntegrate.run_pipelines_from_file(@config_fixture_path)
+      end
+
+      assert capture_io(run_pipelines_from_file) == "step 1\nstep 2\nstep 3\n"
     end
 
     test "when file doesn't exist, raises error" do
       assert_raise File.Error,
-                   fn -> ExIntegrate.run_steps("nonexistant_file") end
+                   fn -> ExIntegrate.run_pipelines_from_file("nonexistant_file") end
+    end
+  end
+
+  describe "run" do
+    @failing_script "test/fixtures/error_1.sh"
+
+    test "when all steps pass, returns :ok tuple with run data" do
+      config_params = %{
+        "pipelines" => [
+          %{
+            "steps" => [
+              %{
+                "name" => "passing step",
+                "command" => "echo",
+                "args" => ["I will pass"]
+              }
+            ]
+          }
+        ]
+      }
+
+      run_fn = fn ->
+        assert {:ok, %Run{}} = ExIntegrate.run_pipelines(config_params)
+      end
+
+      assert capture_io(run_fn) == "I will pass\n"
     end
 
-    for invalid_input <- [123, :not_a_string, nil] do
-      test "rejects non-binary input for #{invalid_input}" do
-        assert_raise FunctionClauseError, fn ->
-          invalid_input = Macro.escape(unquote(invalid_input))
-          ExIntegrate.run_steps(invalid_input)
-        end
-      end
+    test "when a step fails, returns error tuple" do
+      config_params = %{
+        "pipelines" => [
+          %{
+            "steps" => [
+              %{
+                "name" => "failing step",
+                "command" => "bash",
+                "args" => [@failing_script]
+              }
+            ]
+          }
+        ]
+      }
+
+      assert {:error, _} = ExIntegrate.run_pipelines(config_params)
     end
   end
 
   describe "touching a tmp file" do
-    setup do
-      tmp_dir_path = Path.join([System.tmp_dir!(), "ei_test"])
-      File.mkdir!(tmp_dir_path)
-      on_exit(fn -> File.rm_rf!(tmp_dir_path) end)
-
-      {:ok, tmp_dir_path: tmp_dir_path}
-    end
+    setup :create_tmp_dir
 
     test "success: creates the file", %{tmp_dir_path: tmp_dir_path} do
       path = Path.join([tmp_dir_path, "ei_test.txt"])
       step = Step.new(%{"name" => "create_tmp_file", "command" => "touch", "args" => [path]})
-      assert {:ok, _} = ExIntegrate.run_step(step)
+      assert {:ok, _} = ExIntegrate.Boundary.PipelineRunner.run_step(step)
       assert {:ok, _} = File.read(path)
+    end
+
+    defp create_tmp_dir(_context) do
+      tmp_dir_path = Path.join([System.tmp_dir!(), "ei_test"])
+      File.mkdir!(tmp_dir_path)
+      on_exit(fn -> File.rm_rf!(tmp_dir_path) end)
+
+      [tmp_dir_path: tmp_dir_path]
     end
   end
 end

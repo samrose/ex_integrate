@@ -3,20 +3,31 @@ defmodule ExIntegrate do
   Documentation for `ExIntegrate`.
   """
 
-  alias ExIntegrate.Step
-  alias ExIntegrate.StepRunner
+  alias ExIntegrate.Boundary.PipelineRunner
+  alias ExIntegrate.Core.Run
 
-  @spec run_steps(filename :: binary) :: :ok
-  def run_steps(filename) when is_binary(filename) do
-    config =
-      filename
-      |> File.read!()
-      |> Jason.decode!()
-
-    steps = Enum.map(config["steps"], &Step.new/1)
-    Enum.each(steps, &run_step/1)
-    :ok
+  @spec run_pipelines_from_file(filename :: binary) :: {:ok, Run.t()} | {:error, Run.t()}
+  def run_pipelines_from_file(filename) do
+    params = import_json(filename)
+    run_pipelines(params)
   end
 
-  defdelegate run_step(step), to: StepRunner
+  @spec run_pipelines(map) :: {:ok, Run.t()} | {:error, Run.t()}
+  def run_pipelines(params) when is_map(params) do
+    run = Run.new(params)
+
+    results = Enum.map(run.pipelines, &PipelineRunner.run_pipeline/1)
+
+    if Enum.any?(results, fn pipeline -> pipeline.failed? end) do
+      {:error, %{run | pipelines: results}}
+    else
+      {:ok, %{run | pipelines: results}}
+    end
+  end
+
+  defp import_json(filename) do
+    filename
+    |> File.read!()
+    |> Jason.decode!()
+  end
 end

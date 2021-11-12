@@ -1,32 +1,43 @@
 {
-  "steps": [
-     {
-      "name": "get deps",
-      "command": "mix",
-      "args": [
-        "deps.get"
-      ]
-    },
-     {
-      "name": "clean",
-      "command": "mix",
-      "args": [
-        "clean"
-      ]
-    },
-    {
-      "name": "compile",
-      "command": "mix",
-      "args": [
-        "compile"
-      ]
-    },
-    {
-      "name": "compile",
-      "command": "mix",
-      "args": [
-        "test"
-      ]
-    }
+  "pipelines": [
+  {
+    "name":"exintegrate_build",
+	  "steps": [
+	     {
+	      "name": "get deps",
+	      "command": "mix",
+	      "args": [
+		"deps.get"
+	      ]
+	    },
+	     {
+	      "name": "clean",
+	      "command": "mix",
+	      "args": [
+		"clean"
+	      ]
+	    },
+	    {
+	      "name": "compile",
+	      "command": "mix",
+	      "args": [
+		"compile"
+	      ]
+	    }
+	  ]
+      },
+      {
+	"name": "exintegrate_test",
+	  "steps": [
+	    {
+	      "name": "compile",
+	      "command": "mix",
+	      "args": [
+		"test"
+	      ]
+	    }
+	  ]
+      }
   ]
 }
+
