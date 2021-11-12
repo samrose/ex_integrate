@@ -4,24 +4,18 @@ defmodule ExIntegrate.Core.Run do
   @behaviour Access
 
   @enforce_keys [:pipelines]
-  defstruct @enforce_keys ++ [active_pipelines: [], pipeline_graph: nil]
+  defstruct @enforce_keys ++ [active_pipelines: []]
 
   @type t :: %__MODULE__{
           active_pipelines: [Pipeline.t()],
-          pipelines: [Pipeline.t()],
-          pipeline_graph: Graph.t()
+          pipelines: Graph.t()
         }
 
   @spec new(params :: map) :: t()
   def new(params) do
-    pipelines = set_up_pipeline_legacy(params)
-    pipeline_graph = set_up_pipeline_graph(params)
+    pipelines = set_up_pipeline_graph(params)
 
-    struct!(__MODULE__, pipelines: pipelines, pipeline_graph: pipeline_graph)
-  end
-
-  defp set_up_pipeline_legacy(params) do
-    Enum.map(params["pipelines"], &Pipeline.new/1)
+    struct!(__MODULE__, pipelines: pipelines)
   end
 
   defp set_up_pipeline_graph(params) do
@@ -63,8 +57,11 @@ defmodule ExIntegrate.Core.Run do
   end
 
   defp do_put_pipeline(run, old_pipeline, new_pipeline) do
-    updated_pipeline_graph = Graph.replace_vertex(run.pipeline_graph, old_pipeline, new_pipeline)
-    Map.put(run, :pipeline_graph, updated_pipeline_graph)
+    Map.put(
+      run,
+      :pipelines,
+      Graph.replace_vertex(run.pipelines, old_pipeline, new_pipeline)
+    )
   end
 
   def activate_pipelines(%__MODULE__{} = run, pipelines) when is_list(pipelines) do
@@ -78,7 +75,7 @@ defmodule ExIntegrate.Core.Run do
   """
   @spec has_pipeline?(t(), Pipeline.t()) :: boolean
   def has_pipeline?(%__MODULE__{} = run, %Pipeline{} = pipeline) do
-    Graph.has_vertex?(run.pipeline_graph, pipeline)
+    Graph.has_vertex?(run.pipelines, pipeline)
   end
 
   @spec failed?(t()) :: boolean
@@ -90,11 +87,11 @@ defmodule ExIntegrate.Core.Run do
 
   @spec pipelines(t()) :: [Pipeline.t()]
   def pipelines(%__MODULE__{} = run),
-    do: Graph.vertices(run.pipeline_graph)
+    do: Graph.vertices(run.pipelines)
 
   @impl Access
   def fetch(%__MODULE__{} = run, pipeline_name) do
-    {:ok, look_up_pipeline(run.pipeline_graph, pipeline_name)}
+    {:ok, look_up_pipeline(run.pipelines, pipeline_name)}
   end
 
   @impl Access

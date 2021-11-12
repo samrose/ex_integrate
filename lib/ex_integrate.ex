@@ -16,12 +16,15 @@ defmodule ExIntegrate do
   def run_pipelines(params) when is_map(params) do
     run = Run.new(params)
 
-    results = Enum.map(run.pipelines, &PipelineRunner.run_pipeline/1)
+    completed_pipelines =
+      run
+      |> Run.pipelines()
+      |> Enum.map(&PipelineRunner.run_pipeline/1)
 
-    if Enum.any?(results, fn pipeline -> pipeline.failed? end) do
-      {:error, %{run | pipelines: results}}
+    if Enum.any?(completed_pipelines, fn pipeline -> pipeline.failed? end) do
+      {:error, %{run | pipelines: completed_pipelines}}
     else
-      {:ok, %{run | pipelines: results}}
+      {:ok, %{run | pipelines: completed_pipelines}}
     end
   end
 

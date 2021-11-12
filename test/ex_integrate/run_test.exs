@@ -39,23 +39,23 @@ defmodule ExIntegrate.RunTest do
   test "create a run with a dependent pipeline" do
     run = Run.new(@dependent_run_params)
     [pipeline1 | [pipeline2 | []]] = Run.pipelines(run)
-    assert [^pipeline2] = Graph.neighbors(run.pipeline_graph, pipeline1)
+    assert [^pipeline2] = Graph.neighbors(run.pipelines, pipeline1)
   end
 
   test "update pipeline" do
     run = Run.new(@run_params)
-    assert pipeline = hd(run.pipelines)
+    assert pipeline = run |> Run.pipelines() |> hd()
     updated_pipeline = %Pipeline{name: "updated pipeline", steps: []}
 
     assert run = Run.put_pipeline(run, pipeline, updated_pipeline)
 
     assert Run.has_pipeline?(run, updated_pipeline),
            """
-           Expected pipeline graph:
+           Expected pipelines:
 
-           #{inspect(run.pipeline_graph)}
+           #{inspect(run.pipelines)}
 
-           to have pipeline:
+           to include pipeline:
 
            #{inspect(pipeline)}.
            """
