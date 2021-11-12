@@ -1,6 +1,5 @@
 defmodule ExIntegrate.Core.Run do
   alias ExIntegrate.Core.Pipeline
-
   @behaviour Access
 
   @enforce_keys [:pipelines]
