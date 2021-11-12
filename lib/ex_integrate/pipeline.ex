@@ -59,4 +59,7 @@ defmodule ExIntegrate.Core.Pipeline do
         raise "the given function must return a two-element tuple or :pop; got: #{inspect(other)}"
     end
   end
+
+  @impl Access
+  def pop(_pipeline, _step), do: raise("cannot pop steps!")
 end
