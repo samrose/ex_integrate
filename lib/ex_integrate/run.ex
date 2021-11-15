@@ -11,6 +11,7 @@ defmodule ExIntegrate.Core.Run do
           pipelines: Graph.t()
         }
 
+  @type pipeline_root :: :root
   @root_vertex :root
 
   @spec new(params :: map) :: t()
@@ -56,8 +57,7 @@ defmodule ExIntegrate.Core.Run do
     do_put_pipeline(run, old_pipeline, new_pipeline)
   end
 
-  def put_pipeline(%__MODULE__{} = run, old_pipeline_name, %Pipeline{} = new_pipeline)
-      when is_binary(old_pipeline_name) or is_atom(old_pipeline_name) do
+  def put_pipeline(%__MODULE__{} = run, old_pipeline_name, %Pipeline{} = new_pipeline) do
     old_pipeline = run[old_pipeline_name]
     do_put_pipeline(run, old_pipeline, new_pipeline)
   end
@@ -91,12 +91,26 @@ defmodule ExIntegrate.Core.Run do
     |> Enum.any?(&Pipeline.failed?/1)
   end
 
+  def root_vertex(%__MODULE__{} = run) do
+    if Graph.has_vertex?(run.pipelines, @root_vertex) do
+      @root_vertex
+    else
+      raise "graph is missing root node #{inspect(run)}"
+    end
+  end
+
   @spec pipelines(t()) :: [Pipeline.t()]
   def pipelines(%__MODULE__{} = run),
     do: Graph.vertices(run.pipelines) |> Enum.filter(&match?(%Pipeline{}, &1))
 
-  def get_pipeline_paths(%__MODULE__{} = run),
-    do: Graph.arborescence_root(run.pipelines)
+  def get_pipeline_paths(%__MODULE__{} = run) do
+    Graph.arborescence_root(run.pipelines)
+  end
+
+  @spec next_pipelines(t(), Pipeline.t() | pipeline_root) :: [Pipeline.t()]
+  def next_pipelines(%__MODULE__{} = run, pipeline) do
+    Graph.out_neighbors(run.pipelines, pipeline)
+  end
 
   @impl Access
   def fetch(%__MODULE__{} = run, pipeline_name) do
@@ -114,6 +128,9 @@ defmodule ExIntegrate.Core.Run do
 
     case fun.(current) do
       {get, update} ->
+        IO.inspect(pipeline_name)
+        IO.inspect(update)
+
         {get, put_pipeline(run, pipeline_name, update)}
 
       :pop ->

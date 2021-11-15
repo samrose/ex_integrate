@@ -11,7 +11,7 @@ defmodule ExIntegrate.RunTest do
       %{
         "name" => "say hello",
         "command" => "echo",
-        "args" => ["hello, "]
+        "args" => ["hello"]
       }
     ]
   }
@@ -101,5 +101,13 @@ defmodule ExIntegrate.RunTest do
 
     run = Run.activate_pipelines(run, [pipeline])
     assert [pipeline] == Run.active_pipelines(run)
+  end
+
+  test "return the next pipelines to launch" do
+    run = Run.new(%{"pipelines" => [@pipeline_params, @dependent_pipeline_params]})
+    first_pipeline = run[@pipeline_params["name"]]
+    second_pipeline = run[@dependent_pipeline_params["name"]]
+
+    assert [second_pipeline] = Run.next_pipelines(run, first_pipeline)
   end
 end
