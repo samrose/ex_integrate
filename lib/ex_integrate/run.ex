@@ -103,10 +103,6 @@ defmodule ExIntegrate.Core.Run do
   def pipelines(%__MODULE__{} = run),
     do: Graph.vertices(run.pipelines) |> Enum.filter(&match?(%Pipeline{}, &1))
 
-  def get_pipeline_paths(%__MODULE__{} = run) do
-    Graph.arborescence_root(run.pipelines)
-  end
-
   @spec next_pipelines(t(), Pipeline.t() | pipeline_root) :: [Pipeline.t()]
   def next_pipelines(%__MODULE__{} = run, pipeline) do
     Graph.out_neighbors(run.pipelines, pipeline)
