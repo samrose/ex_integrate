@@ -12,6 +12,8 @@ defmodule ExIntegrate.Core.Run do
         }
 
   @type pipeline_root :: :root
+  @type pipeline_key :: String.t()
+
   @root_vertex :root
 
   @spec new(params :: map) :: t()
@@ -54,13 +56,10 @@ defmodule ExIntegrate.Core.Run do
 
   Returns the run with updated pipeline.
   """
-  @spec put_pipeline(t(), Pipeline.t(), Pipeline.t()) :: t()
+  @spec put_pipeline(t(), Pipeline.t() | pipeline_key, Pipeline.t()) :: t()
   def put_pipeline(%__MODULE__{} = run, %Pipeline{} = old_pipeline, %Pipeline{} = new_pipeline) do
-    Map.put(
-      run,
-      :pipelines,
-      Graph.replace_vertex(run.pipelines, old_pipeline, new_pipeline)
-    )
+    updated_pipelines = Graph.replace_vertex(run.pipelines, old_pipeline, new_pipeline)
+    Map.put(run, :pipelines, updated_pipelines)
   end
 
   def put_pipeline(%__MODULE__{} = run, old_pipeline_name, %Pipeline{} = new_pipeline) do
