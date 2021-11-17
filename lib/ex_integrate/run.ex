@@ -126,9 +126,6 @@ defmodule ExIntegrate.Core.Run do
 
     case fun.(current) do
       {get, update} ->
-        IO.inspect(pipeline_name)
-        IO.inspect(update)
-
         {get, put_pipeline(run, pipeline_name, update)}
 
       :pop ->
