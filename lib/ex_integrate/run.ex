@@ -56,20 +56,16 @@ defmodule ExIntegrate.Core.Run do
   """
   @spec put_pipeline(t(), Pipeline.t(), Pipeline.t()) :: t()
   def put_pipeline(%__MODULE__{} = run, %Pipeline{} = old_pipeline, %Pipeline{} = new_pipeline) do
-    do_put_pipeline(run, old_pipeline, new_pipeline)
-  end
-
-  def put_pipeline(%__MODULE__{} = run, old_pipeline_name, %Pipeline{} = new_pipeline) do
-    old_pipeline = run[old_pipeline_name]
-    do_put_pipeline(run, old_pipeline, new_pipeline)
-  end
-
-  defp do_put_pipeline(run, old_pipeline, new_pipeline) do
     Map.put(
       run,
       :pipelines,
       Graph.replace_vertex(run.pipelines, old_pipeline, new_pipeline)
     )
+  end
+
+  def put_pipeline(%__MODULE__{} = run, old_pipeline_name, %Pipeline{} = new_pipeline) do
+    old_pipeline = run[old_pipeline_name]
+    put_pipeline(run, old_pipeline, new_pipeline)
   end
 
   def activate_pipelines(%__MODULE__{} = run, pipelines) when is_list(pipelines) do
