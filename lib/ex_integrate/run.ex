@@ -22,20 +22,22 @@ defmodule ExIntegrate.Core.Run do
   end
 
   defp set_up_pipeline_graph(params) do
+    pipelines = params["pipelines"] || []
     initial_graph = Graph.new(type: :directed) |> Graph.add_vertex(@root_vertex)
+    Enum.reduce(pipelines, initial_graph, &add_pipeline_to_graph/2)
+  end
 
-    Enum.reduce(params["pipelines"], initial_graph, fn pipeline_attrs, graph ->
-      pipeline = Pipeline.new(pipeline_attrs)
+  defp add_pipeline_to_graph(pipeline_attrs, graph) do
+    pipeline = Pipeline.new(pipeline_attrs)
 
-      case pipeline_attrs["depends_on"] do
-        nil ->
-          Graph.add_edge(graph, @root_vertex, pipeline, [pipeline_attrs["name"]])
+    case pipeline_attrs["depends_on"] do
+      nil ->
+        Graph.add_edge(graph, @root_vertex, pipeline, [pipeline_attrs["name"]])
 
-        dependent_pipeline_name ->
-          dependent_pipeline = look_up_pipeline(graph, dependent_pipeline_name)
-          Graph.add_edge(graph, dependent_pipeline, pipeline)
-      end
-    end)
+      dependent_pipeline_name ->
+        dependent_pipeline = look_up_pipeline(graph, dependent_pipeline_name)
+        Graph.add_edge(graph, dependent_pipeline, pipeline)
+    end
   end
 
   defp look_up_pipeline(pipeline_graph, pipeline_name) do
