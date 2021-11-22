@@ -3,14 +3,13 @@ defmodule ExIntegrate.Boundary.PipelineRunner do
   Responsible for running steps and reporting their results.
   """
 
-  alias __MODULE__
   alias ExIntegrate.Core.Step
   alias ExIntegrate.Core.Pipeline
 
   @spec run_pipeline(Pipeline.t()) :: Pipeline.t()
   def run_pipeline(%Pipeline{} = pipeline) do
     Enum.reduce(pipeline.steps, pipeline, fn step, acc ->
-      case PipelineRunner.run_step(step) do
+      case run_step(step) do
         {:ok, step} ->
           Pipeline.complete_step(acc, step)
 

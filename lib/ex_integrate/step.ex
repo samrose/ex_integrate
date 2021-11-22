@@ -34,4 +34,8 @@ defmodule ExIntegrate.Core.Step do
   def save_results(%__MODULE__{} = step, status_code, out, err) do
     %{step | status_code: status_code, out: out, err: err}
   end
+
+  def failed?(%__MODULE__{} = step) do
+    step.status_code !== 0 and not is_nil(step.status_code)
+  end
 end
