@@ -12,7 +12,9 @@ defmodule ExIntegrate.Core.Run do
         }
 
   @type pipeline_root :: :root
-  @root_vertex :root
+  @type pipeline_key :: String.t()
+
+  @pipeline_root :root
 
   @spec new(params :: map) :: t()
   def new(params) do
@@ -22,20 +24,22 @@ defmodule ExIntegrate.Core.Run do
   end
 
   defp set_up_pipeline_graph(params) do
-    initial_graph = Graph.new(type: :directed) |> Graph.add_vertex(@root_vertex)
+    pipelines = params["pipelines"] || []
+    initial_graph = Graph.new(type: :directed) |> Graph.add_vertex(@pipeline_root)
+    Enum.reduce(pipelines, initial_graph, &add_pipeline_to_graph/2)
+  end
 
-    Enum.reduce(params["pipelines"], initial_graph, fn pipeline_attrs, graph ->
-      pipeline = Pipeline.new(pipeline_attrs)
+  defp add_pipeline_to_graph(pipeline_attrs, graph) do
+    pipeline = Pipeline.new(pipeline_attrs)
 
-      case pipeline_attrs["depends_on"] do
-        nil ->
-          Graph.add_edge(graph, @root_vertex, pipeline, [pipeline_attrs["name"]])
+    case pipeline_attrs["depends_on"] do
+      nil ->
+        Graph.add_edge(graph, @pipeline_root, pipeline, [pipeline_attrs["name"]])
 
-        dependent_pipeline_name ->
-          dependent_pipeline = look_up_pipeline(graph, dependent_pipeline_name)
-          Graph.add_edge(graph, dependent_pipeline, pipeline)
-      end
-    end)
+      dependent_pipeline_name ->
+        dependent_pipeline = look_up_pipeline(graph, dependent_pipeline_name)
+        Graph.add_edge(graph, dependent_pipeline, pipeline)
+    end
   end
 
   defp look_up_pipeline(pipeline_graph, pipeline_name) do
@@ -52,24 +56,18 @@ defmodule ExIntegrate.Core.Run do
 
   Returns the run with updated pipeline.
   """
-  @spec put_pipeline(t(), Pipeline.t(), Pipeline.t()) :: t()
+  @spec put_pipeline(t(), Pipeline.t() | pipeline_key, Pipeline.t()) :: t()
   def put_pipeline(%__MODULE__{} = run, %Pipeline{} = old_pipeline, %Pipeline{} = new_pipeline) do
-    do_put_pipeline(run, old_pipeline, new_pipeline)
+    updated_pipelines = Graph.replace_vertex(run.pipelines, old_pipeline, new_pipeline)
+    Map.put(run, :pipelines, updated_pipelines)
   end
 
   def put_pipeline(%__MODULE__{} = run, old_pipeline_name, %Pipeline{} = new_pipeline) do
     old_pipeline = run[old_pipeline_name]
-    do_put_pipeline(run, old_pipeline, new_pipeline)
+    put_pipeline(run, old_pipeline, new_pipeline)
   end
 
-  defp do_put_pipeline(run, old_pipeline, new_pipeline) do
-    Map.put(
-      run,
-      :pipelines,
-      Graph.replace_vertex(run.pipelines, old_pipeline, new_pipeline)
-    )
-  end
-
+  @spec activate_pipelines(t(), [Pipeline.t()]) :: t()
   def activate_pipelines(%__MODULE__{} = run, pipelines) when is_list(pipelines) do
     %{run | active_pipelines: pipelines}
   end
@@ -91,9 +89,10 @@ defmodule ExIntegrate.Core.Run do
     |> Enum.any?(&Pipeline.failed?/1)
   end
 
-  def root_vertex(%__MODULE__{} = run) do
-    if Graph.has_vertex?(run.pipelines, @root_vertex) do
-      @root_vertex
+  @spec pipeline_root(t()) :: pipeline_root
+  def pipeline_root(%__MODULE__{} = run) do
+    if Graph.has_vertex?(run.pipelines, @pipeline_root) do
+      @pipeline_root
     else
       raise "graph is missing root node #{inspect(run)}"
     end
@@ -109,24 +108,24 @@ defmodule ExIntegrate.Core.Run do
   end
 
   @impl Access
+  @spec fetch(t(), pipeline_key) :: {:ok, Pipeline.t()}
   def fetch(%__MODULE__{} = run, pipeline_name) do
     {:ok, look_up_pipeline(run.pipelines, pipeline_name)}
   end
 
   @impl Access
+  @spec pop(t(), term) :: no_return
   def pop(%__MODULE__{} = _run, _pipeline_name) do
     raise "do not pop a run's pipelines"
   end
 
   @impl Access
-  def get_and_update(%__MODULE__{} = run, pipeline_name, fun) when is_function(fun) do
+  @spec get_and_update(t(), pipeline_key, fun) :: {Pipeline.t(), t()}
+  def get_and_update(%__MODULE__{} = run, pipeline_name, fun) when is_function(fun, 1) do
     current = run[pipeline_name]
 
     case fun.(current) do
       {get, update} ->
-        IO.inspect(pipeline_name)
-        IO.inspect(update)
-
         {get, put_pipeline(run, pipeline_name, update)}
 
       :pop ->
