@@ -13,10 +13,8 @@ defmodule ExIntegrate.Core.Pipeline do
           completed_steps: [Step.t()]
         }
 
-  def new(attrs) do
-    steps = Enum.map(attrs["steps"], &Step.new/1)
-    struct!(__MODULE__, name: attrs["name"], steps: steps)
-  end
+  def new(fields),
+    do: struct!(__MODULE__, fields)
 
   def complete_step(%__MODULE__{} = pipeline, %Step{} = step),
     do: %{pipeline | completed_steps: [step] ++ pipeline.completed_steps}
