@@ -9,12 +9,14 @@ defmodule ExIntegrate.Core.Pipeline do
   @type t :: %__MODULE__{
           failed?: boolean,
           name: String.t(),
-          steps: %{optional(non_neg_integer) => Step.t()},
+          steps: [Step.t()],
           completed_steps: [Step.t()]
         }
 
-  def new(fields),
-    do: struct!(__MODULE__, fields)
+  def new(fields) do
+    fields = Map.put(fields, :steps, :queue.from_list(fields[:steps]))
+    struct!(__MODULE__, fields)
+  end
 
   def complete_step(%__MODULE__{} = pipeline, %Step{} = step),
     do: %{pipeline | completed_steps: [step] ++ pipeline.completed_steps}
@@ -26,6 +28,14 @@ defmodule ExIntegrate.Core.Pipeline do
     do: Enum.any?(pipeline.steps, &Step.failed?/1)
 
   def steps(%__MODULE__{} = pipeline), do: pipeline.steps
+
+  @spec pop_step(t()) :: {Step.t(), t()}
+  def pop_step(%__MODULE__{} = pipeline) do
+    Map.get_and_update(pipeline, :steps, fn steps ->
+      {{:value, value}, _} = :queue.out(steps)
+      {value, steps}
+    end)
+  end
 
   def put_step(%__MODULE__{} = pipeline, %Step{} = old_step, %Step{} = new_step) do
     i = pipeline |> steps |> Enum.find_index(fn step -> step.name == old_step.name end)

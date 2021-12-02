@@ -27,4 +27,12 @@ defmodule ExIntegrate.PipelineTest do
              {current_step, updated_step}
            end)
   end
+
+  test "get the next step in the queue" do
+    step1 = %Step{name: "my step 1", command: "foo", args: []}
+    step2 = %Step{name: "my step 2", command: "foo", args: []}
+    pipeline = Pipeline.new(%{name: "my pipeline", steps: [step1, step2]})
+
+    assert {%Step{}, %Pipeline{}} = Pipeline.pop_step(pipeline)
+  end
 end
