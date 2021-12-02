@@ -36,6 +36,6 @@ defmodule ExIntegrate.Core.Step do
   end
 
   def failed?(%__MODULE__{} = step) do
-    step.status_code !== 0 and not is_nil(step.status_code)
+    is_integer(step.status_code) and step.status_code !== 0 
   end
 end
