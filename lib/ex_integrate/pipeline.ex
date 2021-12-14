@@ -14,7 +14,7 @@ defmodule ExIntegrate.Core.Pipeline do
         }
 
   def new(fields) do
-    fields = Map.put(fields, :steps, :queue.from_list(fields[:steps]))
+    fields = put_in(fields[:steps], :queue.from_list(fields[:steps]))
     struct!(__MODULE__, fields)
   end
 
