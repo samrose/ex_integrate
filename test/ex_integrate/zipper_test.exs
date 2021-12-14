@@ -17,7 +17,7 @@ defmodule ExIntegrate.Core.ZipperTest do
   end
 
   describe "moving to the right" do
-    test "when there are elements to the right" do
+    test "when there are items to the right, moves to the right" do
       zipper = [1, 2] |> Z.zip() |> Z.right()
       assert Z.node(zipper) == 1
     end
@@ -29,5 +29,15 @@ defmodule ExIntegrate.Core.ZipperTest do
         zipper |> Z.right() |> Z.right()
       end
     end
+  end
+
+  test "gets the rightmost item" do
+    zipper = Z.zip([1, :foo, ["three"]])
+    assert Z.rightmost(zipper) == ["three"]
+  end
+
+  test "gets the items left of the current one" do
+    zipper = [1, :foo, ["three"]] |> Z.zip() |> Z.right() |> Z.right() |> Z.right()
+    assert Z.left_items(zipper) == [1, :foo]
   end
 end

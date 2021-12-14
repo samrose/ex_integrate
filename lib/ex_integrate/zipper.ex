@@ -41,10 +41,22 @@ defmodule ExIntegrate.Core.Zipper do
   def right({_, _, []} = zipper),
     do: raise(TraversalError, zipper)
 
-  def right({l, old_current, [head_r | tail_r]}),
-    do: {[old_current | l], head_r, tail_r}
+  def right({[], nil, [head_r | tail_r]}),
+    do: {[], head_r, tail_r}
+
+  def right({l, old_current, [head_r | tail_r]}) do
+    new_l = l ++ [old_current]
+    {new_l, head_r, tail_r}
+  end
 
   @spec put_current(t, term) :: t
   def put_current({l, _current_value, r}, new_value),
     do: {l, new_value, r}
+
+  @spec rightmost(t) :: term
+  def rightmost({_l, _current, r}),
+    do: List.last(r)
+
+  def left_items({l, _current, _r}),
+    do: l
 end
