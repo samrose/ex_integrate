@@ -1,5 +1,6 @@
 defmodule ExIntegrate.Core.Pipeline do
   alias ExIntegrate.Core.Step
+  alias ExIntegrate.Core.Zipper
 
   @behaviour Access
 
@@ -9,12 +10,12 @@ defmodule ExIntegrate.Core.Pipeline do
   @type t :: %__MODULE__{
           failed?: boolean,
           name: String.t(),
-          steps: [Step.t()],
+          steps: Zipper.t([Step.t()]),
           completed_steps: [Step.t()]
         }
 
   def new(fields) do
-    fields = put_in(fields[:steps], :queue.from_list(fields[:steps]))
+    fields = put_in(fields[:steps], Zipper.zip(fields[:steps]))
     struct!(__MODULE__, fields)
   end
 
@@ -36,6 +37,14 @@ defmodule ExIntegrate.Core.Pipeline do
       {value, steps}
     end)
   end
+
+  @spec advance(t) :: t
+  def advance(%__MODULE__{} = pipeline),
+    do: %{pipeline | steps: Zipper.right(pipeline.steps)}
+
+  @spec current_step(t) :: Step.t()
+  def current_step(%__MODULE__{} = pipeline),
+    do: Zipper.node(pipeline.steps)
 
   def put_step(%__MODULE__{} = pipeline, %Step{} = old_step, %Step{} = new_step) do
     i = pipeline |> steps |> Enum.find_index(fn step -> step.name == old_step.name end)

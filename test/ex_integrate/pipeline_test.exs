@@ -28,11 +28,12 @@ defmodule ExIntegrate.PipelineTest do
            end)
   end
 
-  test "get the next step in the queue" do
-    step1 = %Step{name: "my step 1", command: "foo", args: []}
-    step2 = %Step{name: "my step 2", command: "foo", args: []}
+  test "advance to the next step" do
+    step1 = Step.new(name: "a step #{System.unique_integer()}", command: "foo", args: [])
+    step2 = Step.new(name: "a step #{System.unique_integer()}", command: "foo", args: [])
     pipeline = Pipeline.new(%{name: "my pipeline", steps: [step1, step2]})
 
-    assert {%Step{}, %Pipeline{}} = Pipeline.pop_step(pipeline)
+    pipeline = pipeline |> Pipeline.advance() |> Pipeline.advance()
+    assert Pipeline.current_step(pipeline) == step2
   end
 end
