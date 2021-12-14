@@ -40,4 +40,9 @@ defmodule ExIntegrate.Core.ZipperTest do
     zipper = [1, :foo, ["three"]] |> Z.zip() |> Z.right() |> Z.right() |> Z.right()
     assert Z.left_items(zipper) == [1, :foo]
   end
+
+  test "gets the items right of the current one" do
+    zipper = ["something", [42, :blue], 56] |> Z.zip() |> Z.right() |> Z.right()
+    assert Z.right_items(zipper) == [56]
+  end
 end

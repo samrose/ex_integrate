@@ -59,4 +59,7 @@ defmodule ExIntegrate.Core.Zipper do
 
   def left_items({l, _current, _r}),
     do: l
+
+  def right_items({_l, _current, r}),
+    do: r
 end
