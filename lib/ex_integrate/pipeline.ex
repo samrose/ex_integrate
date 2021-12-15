@@ -34,8 +34,7 @@ defmodule ExIntegrate.Core.Pipeline do
 
   @spec complete?(t) :: boolean
   def complete?(%__MODULE__{} = pipeline) do
-    Zipper.right_items(pipeline.steps) == [] and
-      Zipper.node(pipeline.steps) == Zipper.rightmost(pipeline.steps)
+    Zipper.end?(pipeline.steps)
   end
 
   @spec steps(t) :: [Step.t()]
