@@ -1,9 +1,9 @@
 { mkDerivation }:
 
 mkDerivation rec {
-  version = "1.12.3";
+  version = "1.13.0";
 
-  # nixnix-prefetch-url --unpack https://github.com/elixir-lang/elixir/archive/v1.12.3.tar.gz
-  sha256 = "07fisdx755cgyghwy95gvdds38sh138z56biariml18jjw5mk3r6";
+  # nixnix-prefetch-url --unpack https://github.com/elixir-lang/elixir/archive/v1.13.0.tar.gz
+  sha256 = "1rkrx9kbs2nhkmzydm02r4wkb8wxwmg8iv0nqilpzj0skkxd6k8w";
   minimumOTPVersion = "24";
 }
