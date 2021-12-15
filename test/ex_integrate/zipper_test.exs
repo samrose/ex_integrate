@@ -58,4 +58,15 @@ defmodule ExIntegrate.Core.ZipperTest do
     zipper = Z.zip(original_list)
     assert Z.to_list(zipper) == original_list
   end
+
+  test "checks if the focus has reached the end" do
+    zipper_at_end =
+      ["something", [[42]]]
+      |> Z.zip()
+      |> Z.right()
+      |> Z.right()
+      |> Z.right()
+
+    assert Z.end?(zipper_at_end)
+  end
 end

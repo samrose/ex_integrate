@@ -71,4 +71,12 @@ defmodule ExIntegrate.Core.Zipper do
 
   def to_list({l, current, r}),
     do: l ++ [current | r]
+
+  @spec end?(t) :: boolean
+  def end?(zipper) do
+    case zipper do
+      {_, :end, []} -> true
+      _ -> false
+    end
+  end
 end
