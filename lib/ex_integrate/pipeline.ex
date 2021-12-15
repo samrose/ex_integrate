@@ -28,7 +28,13 @@ defmodule ExIntegrate.Core.Pipeline do
   def failed?(%__MODULE__{} = pipeline),
     do: Enum.any?(pipeline.steps, &Step.failed?/1)
 
-  def steps(%__MODULE__{} = pipeline), do: pipeline.steps
+  def complete?(%__MODULE__{} = pipeline) do
+    Zipper.right_items(pipeline.steps) == [] and
+      Zipper.node(pipeline.steps) == Zipper.rightmost(pipeline.steps)
+  end
+
+  def steps(%__MODULE__{} = pipeline),
+    do: Zipper.to_list(pipeline.steps)
 
   @spec pop_step(t()) :: {Step.t(), t()}
   def pop_step(%__MODULE__{} = pipeline) do
@@ -42,7 +48,7 @@ defmodule ExIntegrate.Core.Pipeline do
   def advance(%__MODULE__{} = pipeline),
     do: %{pipeline | steps: Zipper.right(pipeline.steps)}
 
-  @spec current_step(t) :: Step.t()
+  @spec current_step(t) :: Step.t() | nil
   def current_step(%__MODULE__{} = pipeline),
     do: Zipper.node(pipeline.steps)
 

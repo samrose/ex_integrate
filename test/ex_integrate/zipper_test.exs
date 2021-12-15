@@ -45,4 +45,10 @@ defmodule ExIntegrate.Core.ZipperTest do
     zipper = ["something", [42, :blue], 56] |> Z.zip() |> Z.right() |> Z.right()
     assert Z.right_items(zipper) == [56]
   end
+
+  test "converts to list" do
+    original_list = [1..2, {"something", :foo, []}, {{:bar}}]
+    zipper = Z.zip(original_list)
+    assert Z.to_list(zipper) == original_list
+  end
 end

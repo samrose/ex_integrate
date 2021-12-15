@@ -62,4 +62,10 @@ defmodule ExIntegrate.Core.Zipper do
 
   def right_items({_l, _current, r}),
     do: r
+
+  def to_list({[], nil, r}),
+    do: r
+
+  def to_list({l, current, r}),
+    do: l ++ [current | r]
 end
