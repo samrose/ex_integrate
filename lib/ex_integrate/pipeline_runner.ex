@@ -3,6 +3,7 @@ defmodule ExIntegrate.Boundary.PipelineRunner do
   Responsible for running steps and reporting their results.
   """
   use GenServer
+  require Logger
 
   @me __MODULE__
   @task_supervisor ExIntegrate.TaskSupervisor
@@ -10,7 +11,17 @@ defmodule ExIntegrate.Boundary.PipelineRunner do
   alias ExIntegrate.Boundary.StepRunner
   alias ExIntegrate.Core.Pipeline
 
-  @spec run_pipeline(Pipeline.t()) :: Pipeline.t()
+  @spec start_link({Pipeline.t(), Access.t()}) :: {:ok, pid} | {:error, term} | :ignore
+  def start_link({%Pipeline{} = state, opts}) do
+    config = %{log: opts[:log] || true}
+    GenServer.start_link(__MODULE__, {state, config}, name: @me)
+  end
+
+  def start_link(%Pipeline{} = pipeline, opts \\ []) do
+    start_link({pipeline, opts})
+  end
+
+  @deprecated "Use PipelineRunner.start_link/1 instead."
   def run_pipeline(%Pipeline{} = pipeline) do
     Enum.reduce(pipeline.steps, pipeline, fn step, acc ->
       case StepRunner.run_step(step) do
@@ -25,46 +36,45 @@ defmodule ExIntegrate.Boundary.PipelineRunner do
     end)
   end
 
-  def start_link({%Pipeline{} = state, config}) do
-    GenServer.start_link(__MODULE__, {state, config}, name: @me)
-  end
-
-  def start_link(%Pipeline{} = pipeline, opts \\ []) do
-    config = %{log: opts[:log] || true}
-    start_link({pipeline, config})
-  end
-
   @impl GenServer
   def init({%Pipeline{} = pipeline, config}) do
-    {:ok, {pipeline, config}, {:continue, {:next_step}}}
+    pipeline = Pipeline.advance(pipeline)
+    {:ok, {pipeline, config}, {:continue, {:run_step}}}
   end
 
   @impl GenServer
-  def handle_continue({:next_step}, {state, config}) do
-    {next_step, new_state} = Pipeline.pop_step(state)
-
+  def handle_continue({:run_step}, {state, config}) do
     Task.Supervisor.async_nolink(@task_supervisor, fn ->
-      StepRunner.run_step(next_step, log: config.log)
+      current_step = Pipeline.current_step(state)
+      StepRunner.run_step(current_step, log: config.log)
     end)
 
-    {:noreply, {new_state, config}}
-  end
-
-  @impl GenServer
-  def handle_info({_ref, {:ok, step}}, {state, config}) do
-    IO.puts("Step completed! #{inspect(step)}")
     {:noreply, {state, config}}
   end
 
   @impl GenServer
+  def handle_info({_ref, {:ok, step}}, {state, config}) do
+    Logger.info("Step completed! #{inspect(step)}")
+
+    if Pipeline.complete?(state) do
+      {:stop, :steps_complete, {state, config}}
+    else
+      new_state = Pipeline.advance(state)
+      {:noreply, {new_state, config}, {:continue, {:run_step}}}
+    end
+  end
+
+  @impl GenServer
   def handle_info({_ref, {:error, step}}, {state, config}) do
-    IO.puts("Step errored! #{inspect(step)}")
+    Logger.info("Step errored! #{inspect(step)}")
     {:stop, :step_failure, {state, config}}
   end
 
   @impl GenServer
   def handle_info({:DOWN, ref, _, _, reason}, {state, config}) do
-    IO.puts("Step task #{inspect(ref)} terminated. Reason: #{inspect(reason)}")
+    Logger.info("Step task #{inspect(ref)} terminated. Reason: #{inspect(reason)}")
     {:noreply, {state, config}}
   end
 end
+
+
