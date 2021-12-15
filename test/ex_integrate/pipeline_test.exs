@@ -36,4 +36,18 @@ defmodule ExIntegrate.PipelineTest do
     pipeline = pipeline |> Pipeline.advance() |> Pipeline.advance()
     assert Pipeline.current_step(pipeline) == step2
   end
+
+  test "replace the current step" do
+    step1 = Step.new(name: "a step #{System.unique_integer()}", command: "foo", args: [])
+    step2 = Step.new(name: "a step #{System.unique_integer()}", command: "foo", args: [])
+    pipeline = Pipeline.new(%{name: "my pipeline", steps: [step1, step2]})
+    updated_step = %{step2 | status_code: Enum.random([0, 1, 2, 3])}
+
+    updated_pipeline =
+      pipeline
+      |> Pipeline.advance()
+      |> Pipeline.replace_current_step(updated_step)
+
+    assert Pipeline.current_step(updated_pipeline) == updated_step
+  end
 end
