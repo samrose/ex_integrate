@@ -15,8 +15,8 @@ defmodule ExIntegrate.Core.Zipper do
     * [ElixirForum post](https://elixirforum.com/t/elixir-needs-a-fifo-type/5701/24)
   """
 
-  @opaque t :: {left :: term, current :: term, right :: term}
-  @opaque t(l, current, r) :: {l, current, r}
+  @opaque t :: {[term], term | nil | :end, [term]}
+  @opaque t(a_list) :: {[], nil, a_list}
 
   defmodule TraversalError do
     defexception [:message]
@@ -28,7 +28,7 @@ defmodule ExIntegrate.Core.Zipper do
     end
   end
 
-  @spec zip(val) :: t([], nil, val) when val: list
+  @spec zip(val) :: t(val) when val: list
   def zip(list) when is_list(list) do
     {[], nil, list}
   end
