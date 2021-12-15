@@ -38,8 +38,11 @@ defmodule ExIntegrate.Core.Zipper do
     do: current
 
   @spec right(t) :: t
-  def right({_, _, []} = zipper),
+  def right({_, :end, []} = zipper),
     do: raise(TraversalError, zipper)
+
+  def right({l, current, []}),
+    do: right({l, current, [:end]})
 
   def right({[], nil, [head_r | tail_r]}),
     do: {[], head_r, tail_r}

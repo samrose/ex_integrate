@@ -11,8 +11,10 @@ defmodule ExIntegrate.Core.ZipperTest do
   describe "modifying current item" do
     test "on success, modifies the item" do
       zipper = [1, 2, 42] |> Z.zip() |> Z.right()
-      updated_zipper = zipper |> Z.put_current(:bar)
-      assert Z.node(updated_zipper) == :bar
+      new_item = Enum.random([:bar, [[42], "foo"], %{baz: :bat}])
+      updated_zipper = Z.put_current(zipper, new_item)
+
+      assert Z.node(updated_zipper) == new_item
     end
   end
 
@@ -22,11 +24,16 @@ defmodule ExIntegrate.Core.ZipperTest do
       assert Z.node(zipper) == 1
     end
 
-    test "raises when there aren't elements to the right" do
+    test "when at the end, adds an 'end' token" do
+      zipper = [42, :foo, ["bar"]] |> Z.zip() |> Z.right() |> Z.right() |> Z.right() |> Z.right()
+      assert Z.node(zipper) == :end
+    end
+
+    test "raises when trying to move past the 'end' token" do
       zipper = [1] |> Z.zip()
 
       assert_raise Z.TraversalError, fn ->
-        zipper |> Z.right() |> Z.right()
+        zipper |> Z.right() |> Z.right() |> Z.right()
       end
     end
   end
