@@ -33,9 +33,8 @@ defmodule ExIntegrate.Core.Pipeline do
     do: Enum.any?(pipeline.steps, &Step.failed?/1)
 
   @spec complete?(t) :: boolean
-  def complete?(%__MODULE__{} = pipeline) do
-    Zipper.end?(pipeline.steps)
-  end
+  def complete?(%__MODULE__{} = pipeline),
+    do: Zipper.end?(pipeline.steps)
 
   @spec steps(t) :: [Step.t()]
   def steps(%__MODULE__{} = pipeline),
