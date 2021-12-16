@@ -1,5 +1,6 @@
 defmodule ExIntegrate.Core.Run do
   alias ExIntegrate.Core.Pipeline
+  alias ExIntegrate.Core.Step
 
   @behaviour Access
 
@@ -30,7 +31,16 @@ defmodule ExIntegrate.Core.Run do
   end
 
   defp add_pipeline_to_graph(pipeline_attrs, graph) do
-    pipeline = Pipeline.new(pipeline_attrs)
+    steps =
+      Enum.map(pipeline_attrs["steps"], fn step_attrs ->
+        %Step{
+          args: step_attrs["args"],
+          command: step_attrs["command"],
+          name: step_attrs["name"]
+        }
+      end)
+
+    pipeline = struct!(Pipeline, name: pipeline_attrs["name"], steps: steps)
 
     case pipeline_attrs["depends_on"] do
       nil ->

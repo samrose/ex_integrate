@@ -4,11 +4,12 @@ defmodule ExIntegrate do
   """
 
   alias ExIntegrate.Boundary.PipelineRunner
+  alias ExIntegrate.Boundary.ConfigParser
   alias ExIntegrate.Core.Run
 
   @spec run_pipelines_from_file(filename :: binary) :: {:ok, Run.t()} | {:error, Run.t()}
   def run_pipelines_from_file(filename) do
-    params = import_json(filename)
+    params = ConfigParser.import_json(filename)
     run_pipelines(params)
   end
 
@@ -26,11 +27,5 @@ defmodule ExIntegrate do
     else
       {:ok, %{run | pipelines: completed_pipelines}}
     end
-  end
-
-  defp import_json(filename) do
-    filename
-    |> File.read!()
-    |> Jason.decode!()
   end
 end
