@@ -2,6 +2,13 @@
 
 A Work In Progress Continuous Integration Library Implemented in Elixir!
 
+
+# EI Flow
+
+![image](https://user-images.githubusercontent.com/115821/149588633-94a8c673-bfa9-4935-9e19-8555d73e3fb8.png)
+
+
+
 ## Installation
 
 If [available in Hex](https://hex.pm/docs/publish), the package can be installed
