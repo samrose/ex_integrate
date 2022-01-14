@@ -1,6 +1,6 @@
 # ExIntegrate
 
-**TODO: Add description**
+A Work In Progress Continuous Integration Library Implemented in Elixir!
 
 ## Installation
 
