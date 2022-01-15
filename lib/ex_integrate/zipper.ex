@@ -29,23 +29,15 @@ defmodule ExIntegrate.Core.Zipper do
   end
 
   @spec zip(val) :: t(val) when val: list
-  def zip(list) when is_list(list) do
-    {[], nil, list}
-  end
+  def zip(list) when is_list(list), do: {[], nil, list}
 
   @spec node(t) :: term
-  def node({_l, current, _r}),
-    do: current
+  def node({_l, current, _r}), do: current
 
-  @spec right(t) :: t
-  def right({_, :end, []} = zipper),
-    do: raise(TraversalError, zipper)
-
-  def right({l, current, []}),
-    do: right({l, current, [:end]})
-
-  def right({[], nil, [head_r | tail_r]}),
-    do: {[], head_r, tail_r}
+  @spec right(t) :: t | no_return
+  def right({_, :end, []} = zipper), do: raise(TraversalError, zipper)
+  def right({l, current, []}), do: right({l, current, [:end]})
+  def right({[], nil, [head_r | tail_r]}), do: {[], head_r, tail_r}
 
   def right({l, old_current, [head_r | tail_r]}) do
     new_l = l ++ [old_current]
@@ -53,32 +45,24 @@ defmodule ExIntegrate.Core.Zipper do
   end
 
   @spec put_current(t, term) :: t
-  def put_current({l, _current_value, r}, new_value),
-    do: {l, new_value, r}
+  def put_current({l, _current_value, r}, new_value), do: {l, new_value, r}
 
   @spec rightmost(t) :: term
-  def rightmost({_l, _current, r}),
-    do: List.last(r)
+  def rightmost({_l, _current, r}), do: List.last(r)
 
-  def left_items({l, _current, _r}),
-    do: l
+  @spec left_items(t) :: list
+  def left_items({l, _current, _r}), do: l
 
-  def right_items({_l, _current, r}),
-    do: r
+  @spec right_items(t) :: list
+  def right_items({_l, _current, r}), do: r
 
-  def to_list({[], nil, r}),
-    do: r
-
-  def to_list({l, current, r}),
-    do: l ++ [current | r]
+  @spec to_list(t) :: list
+  def to_list({[], nil, r}), do: r
+  def to_list({l, current, r}), do: l ++ [current | r]
 
   @spec end?(t) :: boolean
-  def end?(zipper) do
-    case zipper do
-      {_, :end, []} -> true
-      _ -> false
-    end
-  end
+  def end?({_, :end, []}), do: true
+  def end?(_), do: false
 
   @spec zipper?(term) :: boolean
   def zipper?({l, _, r}) when is_list(l) and is_list(r), do: true
