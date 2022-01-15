@@ -15,8 +15,17 @@ defmodule ExIntegrate.Core.Zipper do
     * [ElixirForum post](https://elixirforum.com/t/elixir-needs-a-fifo-type/5701/24)
   """
 
-  @opaque t :: {[term], term | nil | :end, [term]}
-  @opaque t(a_list) :: {[], nil, a_list}
+  defstruct l: [], current: nil, r: []
+
+  @end_token :end
+
+  @type t :: %__MODULE__{
+          l: list,
+          current: term,
+          r: list
+        }
+
+  @type t(val) :: %__MODULE__{r: val}
 
   defmodule TraversalError do
     defexception [:message]
@@ -28,43 +37,48 @@ defmodule ExIntegrate.Core.Zipper do
     end
   end
 
+  defguard is_zipper(term) when is_struct(term, __MODULE__)
+
   @spec zip(val) :: t(val) when val: list
-  def zip(list) when is_list(list), do: {[], nil, list}
+  def zip(list) when is_list(list), do: %__MODULE__{r: list}
 
   @spec node(t) :: term
-  def node({_l, current, _r}), do: current
+  def node(%__MODULE__{} = zipper), do: zipper.current
 
   @spec right(t) :: t | no_return
-  def right({_, :end, []} = zipper), do: raise(TraversalError, zipper)
-  def right({l, current, []}), do: right({l, current, [:end]})
-  def right({[], nil, [head_r | tail_r]}), do: {[], head_r, tail_r}
+  def right(%__MODULE__{current: @end_token, r: []} = zipper), do: raise(TraversalError, zipper)
+  def right(%__MODULE__{r: []} = zipper), do: right(%{zipper | r: [@end_token]})
 
-  def right({l, old_current, [head_r | tail_r]}) do
-    new_l = l ++ [old_current]
-    {new_l, head_r, tail_r}
+  def right(%__MODULE__{l: [], current: nil, r: [head_r | tail_r]}),
+    do: %__MODULE__{current: head_r, r: tail_r}
+
+  def right(%__MODULE__{} = zipper) do
+    l = zipper.l ++ [zipper.current]
+    [head_r | tail_r] = zipper.r
+    %__MODULE__{l: l, current: head_r, r: tail_r}
   end
 
   @spec put_current(t, term) :: t
-  def put_current({l, _current_value, r}, new_value), do: {l, new_value, r}
+  def put_current(%__MODULE__{} = zipper, new_value),
+    do: %{zipper | current: new_value}
 
   @spec rightmost(t) :: term
-  def rightmost({_l, _current, r}), do: List.last(r)
+  def rightmost(%__MODULE__{} = zipper), do: zipper |> right_items() |> List.last()
 
   @spec left_items(t) :: list
-  def left_items({l, _current, _r}), do: l
+  def left_items(%__MODULE__{} = zipper), do: zipper.l
 
   @spec right_items(t) :: list
-  def right_items({_l, _current, r}), do: r
+  def right_items(%__MODULE__{} = zipper), do: zipper.r
 
   @spec to_list(t) :: list
-  def to_list({[], nil, r}), do: r
-  def to_list({l, current, r}), do: l ++ [current | r]
+  def to_list(%__MODULE__{l: [], current: nil, r: r}), do: r
+  def to_list(%__MODULE__{} = zipper), do: Enum.concat([zipper.l, zipper.r, [zipper.current]])
 
   @spec end?(t) :: boolean
-  def end?({_, :end, []}), do: true
-  def end?(_), do: false
+  def end?(%__MODULE__{} = zipper), do: zipper.current == @end_token
 
   @spec zipper?(term) :: boolean
-  def zipper?({l, _, r}) when is_list(l) and is_list(r), do: true
+  def zipper?(zipper) when is_zipper(zipper), do: true
   def zipper?(_), do: false
 end
