@@ -79,4 +79,8 @@ defmodule ExIntegrate.Core.Zipper do
       _ -> false
     end
   end
+
+  @spec zipper?(term) :: boolean
+  def zipper?({l, _, r}) when is_list(l) and is_list(r), do: true
+  def zipper?(_), do: false
 end

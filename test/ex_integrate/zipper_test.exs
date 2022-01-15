@@ -69,4 +69,16 @@ defmodule ExIntegrate.Core.ZipperTest do
 
     assert Z.end?(zipper_at_end)
   end
+
+  describe "checking if the input is a zipper" do
+    test "returns true for zippers" do
+      zipper = Z.zip([1, 2, 3])
+      assert Z.zipper?(zipper)
+    end
+
+    test "returns false for non-zippers" do
+      non_zipper = Enum.random([["not", "a", "zipper"], Enum.random(0..1000), :foobar])
+      refute Z.zipper?(non_zipper)
+    end
+  end
 end
