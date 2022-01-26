@@ -35,7 +35,7 @@ defmodule ExIntegrate.Core.Pipeline do
 
   @spec failed?(t) :: boolean
   def failed?(%__MODULE__{} = pipeline),
-    do: Enum.any?(pipeline.steps, &Step.failed?/1)
+    do: pipeline.failed?
 
   @spec complete?(t) :: boolean
   def complete?(%__MODULE__{} = pipeline),

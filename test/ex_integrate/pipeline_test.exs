@@ -1,7 +1,8 @@
 defmodule ExIntegrate.PipelineTest do
   use ExUnit.Case, async: true
 
-  alias ExIntegrate.Core.{Pipeline, Step}
+  alias ExIntegrate.Core.Pipeline
+  alias ExIntegrate.Core.Step
 
   test "get a pipeline's step by name" do
     step = Step.new(name: "my step", command: "foo", args: [])
