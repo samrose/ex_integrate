@@ -8,15 +8,28 @@ defmodule ExIntegrate.Boundary.PipelineRunner do
   @me __MODULE__
   @task_supervisor ExIntegrate.TaskSupervisor
 
+  alias ExIntegrate.Boundary.RunManager
   alias ExIntegrate.Boundary.StepRunner
   alias ExIntegrate.Core.Pipeline
 
   # Client API
 
+  def start_link(%Pipeline{} = pipeline) do
+    name = {:via, Registry, {ExIntegrate.Registry.PipelineRunner, pipeline}}
+    GenServer.start_link(__MODULE__, [pipeline: pipeline], name: name)
+  end
+
   @spec start_link(Access.t()) :: {:ok, pid} | {:error, term} | :ignore
   def start_link(opts) do
     name = opts[:name] || @me
     GenServer.start_link(__MODULE__, opts, name: name)
+  end
+
+  def launch_pipeline(%Pipeline{} = pipeline) do
+    DynamicSupervisor.start_child(
+      ExIntegrate.Supervisor.PipelineRunner,
+      {__MODULE__, pipeline}
+    )
   end
 
   # GenServer callbacks
@@ -54,6 +67,9 @@ defmodule ExIntegrate.Boundary.PipelineRunner do
 
     if Pipeline.complete?(new_state) do
       Logger.info("All steps completed successfully. Terminating pipeline #{inspect(new_state)}")
+
+      RunManager.pipeline_completed(new_state)
+
       {:stop, :normal, {new_state, config}}
     else
       {:noreply, {new_state, config}, {:continue, {:run_step}}}
@@ -78,7 +94,9 @@ defmodule ExIntegrate.Boundary.PipelineRunner do
        implementation.
        """
   def run_pipeline(%Pipeline{} = pipeline) do
-    Enum.reduce(pipeline.steps, pipeline, fn step, acc ->
+    pipeline
+    |> Pipeline.steps()
+    |> Enum.reduce(pipeline, fn step, acc ->
       case StepRunner.run_step(step) do
         {:ok, step} ->
           Pipeline.complete_step(acc, step)

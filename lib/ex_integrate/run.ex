@@ -17,11 +17,12 @@ defmodule ExIntegrate.Core.Run do
 
   @behaviour Access
 
-  @enforce_keys [:pipelines]
+  @enforce_keys [:pipelines, :end_nodes]
   defstruct @enforce_keys ++ [active_pipelines: []]
 
   @type t :: %__MODULE__{
           active_pipelines: [Pipeline.t()],
+          end_nodes: non_neg_integer,
           pipelines: Graph.t()
         }
 
@@ -33,8 +34,9 @@ defmodule ExIntegrate.Core.Run do
   @spec new(params :: map) :: t()
   def new(params) do
     pipelines = set_up_pipeline_graph(params)
+    end_nodes = pipelines |> do_final_pipelines() |> length()
 
-    struct!(__MODULE__, pipelines: pipelines)
+    struct!(__MODULE__, pipelines: pipelines, end_nodes: end_nodes)
   end
 
   defp set_up_pipeline_graph(params) do
@@ -53,16 +55,15 @@ defmodule ExIntegrate.Core.Run do
         }
       end)
 
-    pipeline = struct!(Pipeline, name: pipeline_attrs["name"], steps: steps)
+    pipeline = Pipeline.new(name: pipeline_attrs["name"], steps: steps)
 
-    case pipeline_attrs["depends_on"] do
-      nil ->
-        Graph.add_edge(graph, @pipeline_root, pipeline, [pipeline_attrs["name"]])
+    parent_pipeline =
+      case pipeline_attrs["depends_on"] do
+        nil -> @pipeline_root
+        parent_pipeline_name -> look_up_pipeline(graph, parent_pipeline_name)
+      end
 
-      dependent_pipeline_name ->
-        dependent_pipeline = look_up_pipeline(graph, dependent_pipeline_name)
-        Graph.add_edge(graph, dependent_pipeline, pipeline)
-    end
+    Graph.add_edge(graph, parent_pipeline, pipeline)
   end
 
   defp look_up_pipeline(pipeline_graph, pipeline_name) do
@@ -71,6 +72,15 @@ defmodule ExIntegrate.Core.Run do
     |> Enum.find(fn
       %{name: name} when name == pipeline_name -> true
       _ -> false
+    end)
+  end
+
+  defp do_final_pipelines(pipeline_graph) do
+    Graph.Reducers.Dfs.reduce(pipeline_graph, [], fn pipeline, acc ->
+      case Graph.out_degree(pipeline_graph, pipeline) do
+        0 -> {:next, [pipeline | acc]}
+        _ -> {:skip, acc}
+      end
     end)
   end
 
@@ -128,6 +138,11 @@ defmodule ExIntegrate.Core.Run do
   @spec next_pipelines(t(), Pipeline.t() | pipeline_root) :: [Pipeline.t()]
   def next_pipelines(%__MODULE__{} = run, pipeline) do
     Graph.out_neighbors(run.pipelines, pipeline)
+  end
+
+  @spec final_pipelines(t()) :: [Pipeline.t()]
+  def final_pipelines(%__MODULE__{} = run) do
+    do_final_pipelines(run.pipelines)
   end
 
   @impl Access

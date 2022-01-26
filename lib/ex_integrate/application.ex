@@ -1,20 +1,21 @@
 defmodule ExIntegrate.Application do
-  # See https://hexdocs.pm/elixir/Application.html
-  # for more information on OTP Applications
   @moduledoc false
 
+  require Logger
   use Application
 
-  @impl true
+  @impl Application
   def start(_type, _args) do
+    Logger.info("Starting ExIntegrate")
+
     children = [
-      # Starts a worker by calling: ExIntegrate.Worker.start_link(arg)
-      # {ExIntegrate.Worker, arg}
-      {Task.Supervisor, name: ExIntegrate.TaskSupervisor}
+      {Task.Supervisor, name: ExIntegrate.TaskSupervisor},
+      {Registry, name: ExIntegrate.Registry.PipelineRunner, keys: :unique},
+      {DynamicSupervisor, name: ExIntegrate.Supervisor.PipelineRunner, strategy: :one_for_one},
+      {ExIntegrate.Boundary.RunManager, [name: ExIntegrate.Boundary.RunManager]},
+      {ExIntegrate, [name: ExIntegrate]}
     ]
 
-    # See https://hexdocs.pm/elixir/Supervisor.html
-    # for other strategies and supported options
     opts = [strategy: :one_for_one, name: ExIntegrate.Supervisor]
     Supervisor.start_link(children, opts)
   end
