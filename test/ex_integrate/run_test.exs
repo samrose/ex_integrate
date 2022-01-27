@@ -4,6 +4,7 @@ defmodule ExIntegrate.RunTest do
   alias ExIntegrate.Core.Run
   alias ExIntegrate.Core.Pipeline
   alias ExIntegrate.Core.Step
+  alias ExIntegrate.Core.Zipper
 
   @pipeline_params %{
     "name" => "say hello",
@@ -42,38 +43,38 @@ defmodule ExIntegrate.RunTest do
     assert [^pipeline1] = Graph.neighbors(run.pipelines, pipeline2)
   end
 
-  test "update pipeline" do
-    run = Run.new(@run_params)
-    assert pipeline = run |> Run.pipelines() |> hd()
-    updated_pipeline = %Pipeline{name: "updated pipeline", steps: []}
+  describe "updating a pipeline" do
+    test "on pipeline success, updates the pipelines" do
+      run = Run.new(@run_params)
+      assert pipeline = run |> Run.pipelines() |> hd()
+      updated_pipeline = %Pipeline{name: "updated pipeline", steps: []}
 
-    assert run = Run.put_pipeline(run, pipeline, updated_pipeline)
+      run = Run.put_pipeline(run, pipeline, updated_pipeline)
+      refute Run.failed?(run), "Expected run not to have failed. #{inspect(run)}"
 
-    assert Run.has_pipeline?(run, updated_pipeline),
-           """
-           Expected pipelines:
+      assert Run.has_pipeline?(run, updated_pipeline),
+             """
+             Expected pipelines:
 
-           #{inspect(run.pipelines)}
+             #{inspect(run.pipelines)}
 
-           to include pipeline:
+             to include pipeline:
 
-           #{inspect(pipeline)}.
-           """
-  end
+             #{inspect(pipeline)}.
+             """
+    end
 
-  test "checks if a run has failed" do
-    run = Run.new(@run_params)
-    refute Run.failed?(run)
+    test "if updated pipeline failed, then the run has failed" do
+      run = Run.new(@run_params)
+      refute Run.failed?(run)
 
-    pipeline = run |> Run.pipelines() |> hd()
+      pipeline = run |> Run.pipelines() |> hd()
+      failed_pipeline = %{pipeline | failed?: true}
+      failed_run = Run.put_pipeline(run, pipeline, failed_pipeline)
 
-    failed_pipeline = %Pipeline{
-      name: "a failed pipeline",
-      steps: [%Step{status_code: 1, name: "a failed step", command: "foo", args: []}]
-    }
-
-    failed_run = Run.put_pipeline(run, pipeline, failed_pipeline)
-    assert Run.failed?(failed_run), "Expected run to have failed.\n\n#{inspect(failed_run)}"
+      assert Run.failed?(failed_run),
+             "Expected run to have failed.\n\n#{inspect(failed_run)}"
+    end
   end
 
   test "look up a pipeline by name" do
