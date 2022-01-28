@@ -59,7 +59,7 @@ defmodule ExIntegrate.Core.Zipper do
            when is_zipper(zipper) and
                   (zipper.position >= zipper.size or zipper.position < @initial_position)
 
-  @spec new(val) :: t(val) when val: list
+  @spec new([val]) :: t(val) when val: term
   def new(list) when is_list(list) do
     struct!(__MODULE__,
       l: [],

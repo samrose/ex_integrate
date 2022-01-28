@@ -11,16 +11,17 @@ defmodule ExIntegrate.Core.Pipeline do
   @enforce_keys [:name, :steps]
   defstruct @enforce_keys ++ [failed?: false, completed_steps: []]
 
+  @type key :: String.t()
+
   @type t :: %__MODULE__{
           failed?: boolean,
-          name: String.t(),
-          steps: Zipper.t([Step.t()]),
-          completed_steps: [Step.t()]
+          name: key,
+          steps: Zipper.t(Step.t())
         }
 
-  @spec new(fields :: keyword | map) :: t
+  @spec new(Enum.t()) :: t
   def new(fields) do
-    fields = put_in(fields[:steps], Zipper.zip(fields[:steps]))
+    fields = update_in(fields[:steps], &Zipper.zip/1)
     struct!(__MODULE__, fields)
   end
 
