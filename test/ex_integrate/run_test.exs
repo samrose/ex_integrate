@@ -47,7 +47,7 @@ defmodule ExIntegrate.RunTest do
     test "on pipeline success, updates the pipelines" do
       run = Run.new(@run_params)
       assert pipeline = run |> Run.pipelines() |> hd()
-      updated_pipeline = %Pipeline{name: "updated pipeline", steps: []}
+      updated_pipeline = pipeline |> Pipeline.advance()
 
       run = Run.put_pipeline(run, pipeline, updated_pipeline)
       refute Run.failed?(run), "Expected run not to have failed. #{inspect(run)}"
@@ -85,15 +85,15 @@ defmodule ExIntegrate.RunTest do
 
   test "get and update a run's pipeline" do
     run = Run.new(%{"pipelines" => [@pipeline_params]})
-    pipeline_name = @pipeline_params["name"]
-    new_pipeline = %Pipeline{name: "new pipeline", steps: []}
+    %{name: pipeline_name} = pipeline = run |> Run.pipelines() |> hd
+    updated_pipeline = pipeline |> Pipeline.advance()
 
     assert {%{name: ^pipeline_name}, updated_run} =
              Run.get_and_update(run, pipeline_name, fn pipeline ->
-               {pipeline, new_pipeline}
+               {pipeline, updated_pipeline}
              end)
 
-    assert ^new_pipeline = updated_run[new_pipeline.name]
+    assert ^updated_pipeline = updated_run[updated_pipeline.name]
   end
 
   test "modify and read a run's active pipelines" do
