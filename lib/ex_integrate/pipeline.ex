@@ -17,26 +17,6 @@ defmodule ExIntegrate.Core.Pipeline do
           failed?: boolean,
           name: key,
           steps: Zipper.t(Step.t())
-        }
-
-  @spec new(Enum.t()) :: t
-  def new(fields) do
-    fields = update_in(fields[:steps], &Zipper.zip/1)
-    struct!(__MODULE__, fields)
-  end
-
-  @spec fail(t) :: t
-  def fail(%__MODULE__{} = pipeline),
-    do: %{pipeline | failed?: true}
-
-  @spec failed?(t) :: boolean
-  def failed?(%__MODULE__{} = pipeline),
-    do: pipeline.failed?
-
-  @spec complete?(t) :: boolean
-  def complete?(%__MODULE__{} = pipeline),
-    do: failed?(pipeline) or Zipper.end?(pipeline.steps)
-
   @spec steps(t) :: [Step.t()]
   def steps(%__MODULE__{} = pipeline),
     do: Zipper.to_list(pipeline.steps)
