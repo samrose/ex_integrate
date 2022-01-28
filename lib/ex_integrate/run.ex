@@ -18,10 +18,9 @@ defmodule ExIntegrate.Core.Run do
   @behaviour Access
 
   @enforce_keys [:pipelines, :end_nodes]
-  defstruct @enforce_keys ++ [active_pipelines: [], failed?: false]
+  defstruct @enforce_keys ++ [failed?: false]
 
   @type t :: %__MODULE__{
-          active_pipelines: [Pipeline.t()],
           end_nodes: non_neg_integer,
           failed?: boolean,
           pipelines: Graph.t()
@@ -103,13 +102,6 @@ defmodule ExIntegrate.Core.Run do
     old_pipeline = run[old_pipeline_name]
     put_pipeline(run, old_pipeline, new_pipeline)
   end
-
-  @spec activate_pipelines(t(), [Pipeline.t()]) :: t()
-  def activate_pipelines(%__MODULE__{} = run, pipelines) when is_list(pipelines) do
-    %{run | active_pipelines: pipelines}
-  end
-
-  def active_pipelines(%__MODULE__{} = run), do: run.active_pipelines
 
   @doc """
   Returns true if the pipeline is included in the run; otherwise, returns false.

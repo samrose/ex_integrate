@@ -9,7 +9,7 @@ defmodule ExIntegrate.Core.Pipeline do
   @behaviour Access
 
   @enforce_keys [:name, :steps]
-  defstruct @enforce_keys ++ [failed?: false, completed_steps: []]
+  defstruct @enforce_keys ++ [failed?: false]
 
   @type key :: String.t()
 
@@ -24,10 +24,6 @@ defmodule ExIntegrate.Core.Pipeline do
     fields = update_in(fields[:steps], &Zipper.zip/1)
     struct!(__MODULE__, fields)
   end
-
-  @spec complete_step(t, Step.t()) :: t
-  def complete_step(%__MODULE__{} = pipeline, %Step{} = step),
-    do: %{pipeline | completed_steps: [step] ++ pipeline.completed_steps}
 
   @spec fail(t) :: t
   def fail(%__MODULE__{} = pipeline),
@@ -71,6 +67,12 @@ defmodule ExIntegrate.Core.Pipeline do
   @spec replace_current_step(t, Step.t()) :: t
   def replace_current_step(%__MODULE__{} = pipeline, %Step{} = step) do
     put_step(pipeline, current_step(pipeline), step)
+  end
+
+  def replace_step_and_advance(%__MODULE__{} = pipeline, %Step{} = step) do
+    pipeline
+    |> replace_current_step(step)
+    |> advance()
   end
 
   @spec put_step(t, Step.t(), Step.t()) :: t

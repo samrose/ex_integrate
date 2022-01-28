@@ -19,12 +19,13 @@ defmodule ExIntegrate.Boundary.PipelineRunner do
     GenServer.start_link(__MODULE__, [pipeline: pipeline], name: name)
   end
 
-  @spec start_link(Access.t()) :: {:ok, pid} | {:error, term} | :ignore
+  @spec start_link(Access.t()) :: GenServer.on_start_child()
   def start_link(opts) do
     name = opts[:name] || @me
     GenServer.start_link(__MODULE__, opts, name: name)
   end
 
+  @spec launch_pipeline(Pipeline.t()) :: DynamicSupervisor.on_start_child()
   def launch_pipeline(%Pipeline{} = pipeline) do
     DynamicSupervisor.start_child(
       ExIntegrate.Supervisor.PipelineRunner,
@@ -46,9 +47,10 @@ defmodule ExIntegrate.Boundary.PipelineRunner do
 
   @impl GenServer
   def handle_continue({:run_step}, {state, config}) do
+    current_step = Pipeline.current_step(state)
+    Logger.info("Starting step: #{inspect(current_step)}")
+
     Task.Supervisor.async_nolink(@task_supervisor, fn ->
-      current_step = Pipeline.current_step(state)
-      Logger.info("Starting step: #{inspect(current_step)}")
       StepRunner.run_step(current_step, log: config.log)
     end)
 
@@ -60,32 +62,45 @@ defmodule ExIntegrate.Boundary.PipelineRunner do
     Logger.info("Step completed. #{inspect(step)}")
     Process.demonitor(ref, [:flush])
 
-    new_state =
+    state =
       state
       |> Pipeline.replace_current_step(step)
       |> Pipeline.advance()
 
-    if Pipeline.complete?(new_state) do
-      Logger.info("All steps completed successfully. Terminating pipeline #{inspect(new_state)}")
-
-      RunManager.pipeline_completed(new_state)
-
-      {:stop, :normal, {new_state, config}}
+    if Pipeline.complete?(state) do
+      msg = "All steps completed successfully. Terminating pipeline #{inspect(state)}"
+      finish_pipeline(state, msg)
     else
-      {:noreply, {new_state, config}, {:continue, {:run_step}}}
+      {:noreply, {state, config}, {:continue, {:run_step}}}
     end
   end
 
   @impl GenServer
-  def handle_info({_ref, {:error, step}}, {state, _config}) do
+  def handle_info({ref, {:error, step}}, {state, _config}) do
     Logger.info("Step errored. #{inspect(step)}")
-    {:stop, :step_failure, state}
+    Process.demonitor(ref, [:flush])
+
+    state =
+      state
+      |> Pipeline.replace_current_step(step)
+      |> Pipeline.advance()
+
+    msg = "Step failure. Terminating pipeline #{inspect(state)}"
+    finish_pipeline(state, msg)
   end
 
   @impl GenServer
-  def handle_info({:DOWN, ref, _, _, reason}, {state, _config}) do
+  def handle_info({:DOWN, ref, _, _, reason}, {state, config}) do
+    RunManager.pipeline_completed(state)
     Logger.info("Step task #{inspect(ref)} terminated unexpectedly. Reason: #{inspect(reason)}")
-    {:stop, :step_failure, state}
+    {:stop, :normal, {state, config}}
+  end
+
+  defp finish_pipeline(state, msg) do
+    RunManager.pipeline_completed(state)
+    Logger.info(msg)
+
+    {:stop, :normal, state}
   end
 
   @doc deprecated: """
@@ -97,14 +112,8 @@ defmodule ExIntegrate.Boundary.PipelineRunner do
     pipeline
     |> Pipeline.steps()
     |> Enum.reduce(pipeline, fn step, acc ->
-      case StepRunner.run_step(step) do
-        {:ok, step} ->
-          Pipeline.complete_step(acc, step)
-
-        {:error, _error} ->
-          acc
-          |> Pipeline.complete_step(step)
-          |> Pipeline.fail()
+      with {_ok_or_error, completed_step} <- StepRunner.run_step(step) do
+        Pipeline.put_step(acc, step, completed_step)
       end
     end)
   end

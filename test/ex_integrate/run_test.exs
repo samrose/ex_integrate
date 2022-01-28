@@ -95,14 +95,6 @@ defmodule ExIntegrate.RunTest do
     assert ^updated_pipeline = updated_run[updated_pipeline.name]
   end
 
-  test "modify and read a run's active pipelines" do
-    run = Run.new(@run_params)
-    pipeline = run |> Run.pipelines() |> hd()
-
-    run = Run.activate_pipelines(run, [pipeline])
-    assert [pipeline] == Run.active_pipelines(run)
-  end
-
   test "return the next pipelines to launch" do
     run = Run.new(%{"pipelines" => [@pipeline_params, @dependent_pipeline_params]})
     first_pipeline = run[@pipeline_params["name"]]
