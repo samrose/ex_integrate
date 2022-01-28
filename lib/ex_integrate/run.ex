@@ -18,11 +18,12 @@ defmodule ExIntegrate.Core.Run do
   @behaviour Access
 
   @enforce_keys [:pipelines, :end_nodes]
-  defstruct @enforce_keys ++ [active_pipelines: []]
+  defstruct @enforce_keys ++ [active_pipelines: [], failed?: false]
 
   @type t :: %__MODULE__{
           active_pipelines: [Pipeline.t()],
           end_nodes: non_neg_integer,
+          failed?: boolean,
           pipelines: Graph.t()
         }
 
@@ -92,7 +93,10 @@ defmodule ExIntegrate.Core.Run do
   @spec put_pipeline(t(), Pipeline.t() | pipeline_key, Pipeline.t()) :: t()
   def put_pipeline(%__MODULE__{} = run, %Pipeline{} = old_pipeline, %Pipeline{} = new_pipeline) do
     updated_pipelines = Graph.replace_vertex(run.pipelines, old_pipeline, new_pipeline)
-    Map.put(run, :pipelines, updated_pipelines)
+
+    run
+    |> Map.put(:pipelines, updated_pipelines)
+    |> Map.put(:failed?, run.failed? || Pipeline.failed?(new_pipeline))
   end
 
   def put_pipeline(%__MODULE__{} = run, old_pipeline_name, %Pipeline{} = new_pipeline) do
@@ -116,11 +120,7 @@ defmodule ExIntegrate.Core.Run do
   end
 
   @spec failed?(t()) :: boolean
-  def failed?(%__MODULE__{} = run) do
-    run
-    |> pipelines()
-    |> Enum.any?(&Pipeline.failed?/1)
-  end
+  def failed?(%__MODULE__{} = run), do: run.failed?
 
   @spec pipeline_root(t()) :: pipeline_root
   def pipeline_root(%__MODULE__{} = run) do

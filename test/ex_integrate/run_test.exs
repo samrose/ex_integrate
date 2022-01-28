@@ -69,7 +69,8 @@ defmodule ExIntegrate.RunTest do
       refute Run.failed?(run)
 
       pipeline = run |> Run.pipelines() |> hd()
-      failed_pipeline = %{pipeline | failed?: true}
+      step = pipeline |> Pipeline.steps() |> hd
+      failed_pipeline = Pipeline.put_step(pipeline, step, %{step | status_code: 1})
       failed_run = Run.put_pipeline(run, pipeline, failed_pipeline)
 
       assert Run.failed?(failed_run),
