@@ -3,8 +3,6 @@ defmodule ExIntegrate.RunTest do
 
   alias ExIntegrate.Core.Run
   alias ExIntegrate.Core.Pipeline
-  alias ExIntegrate.Core.Step
-  alias ExIntegrate.Core.Zipper
 
   @pipeline_params %{
     "name" => "say hello",
@@ -110,6 +108,6 @@ defmodule ExIntegrate.RunTest do
     first_pipeline = run[@pipeline_params["name"]]
     second_pipeline = run[@dependent_pipeline_params["name"]]
 
-    assert [second_pipeline] = Run.next_pipelines(run, first_pipeline)
+    assert [^second_pipeline] = Run.next_pipelines(run, first_pipeline)
   end
 end

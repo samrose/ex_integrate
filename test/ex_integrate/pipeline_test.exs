@@ -93,7 +93,7 @@ defmodule ExIntegrate.PipelineTest do
         |> Pipeline.new()
         |> Pipeline.advance()
         |> Pipeline.advance()
-        |> Pipeline.replace_current_step(%{step2 | status_code: 1})
+        |> Pipeline.replace_current_step(failed_step2)
 
       assert Pipeline.complete?(failed_pipeline),
              "Expected pipeline to be completed, but it was not\n\n#{inspect(failed_pipeline)}"
