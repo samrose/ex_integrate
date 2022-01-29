@@ -1,7 +1,5 @@
 defmodule ExIntegrate do
-  @moduledoc """
-  Documentation for `ExIntegrate`.
-  """
+  @moduledoc File.read!("README.md")
 
   alias ExIntegrate.Boundary.PipelineRunner
   alias ExIntegrate.Boundary.ConfigParser
