@@ -26,7 +26,7 @@ defmodule ExIntegrate.Boundary.PipelineRunner do
   def launch_pipeline(%Pipeline{} = pipeline) do
     DynamicSupervisor.start_child(
       ExIntegrate.Supervisor.PipelineRunner,
-      {__MODULE__, pipeline}
+      {__MODULE__, {pipeline, []}}
     )
   end
 
