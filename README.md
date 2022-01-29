@@ -1,5 +1,7 @@
 # ExIntegrate
 
+![CircleCI](https://img.shields.io/circleci/build/github/samrose/ex_integrate)
+
 A Work In Progress Continuous Integration Library Implemented in Elixir!
 
 
