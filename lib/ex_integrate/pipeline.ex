@@ -17,6 +17,8 @@ defmodule ExIntegrate.Core.Pipeline do
           failed?: boolean,
           name: key,
           steps: Zipper.t(Step.t())
+        }
+
   @spec steps(t) :: [Step.t()]
   def steps(%__MODULE__{} = pipeline),
     do: Zipper.to_list(pipeline.steps)

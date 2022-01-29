@@ -41,7 +41,7 @@ defmodule ExIntegrate.Boundary.PipelineRunner do
   end
 
   defp parse_opts(opts) do
-    default_config = [log: true, on_completion: &report_results/2]
+    default_config = [on_completion: &report_results/2]
 
     default_config
     |> Keyword.merge(opts)
@@ -55,7 +55,7 @@ defmodule ExIntegrate.Boundary.PipelineRunner do
     Logger.info("Starting step: #{inspect(current_step)}")
 
     Task.Supervisor.async_nolink(@task_supervisor, fn ->
-      StepRunner.run_step(current_step, log: config.log)
+      StepRunner.run_step(current_step)
     end)
 
     {:noreply, {state, config}}
