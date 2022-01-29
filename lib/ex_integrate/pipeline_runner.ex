@@ -5,7 +5,6 @@ defmodule ExIntegrate.Boundary.PipelineRunner do
   use GenServer, restart: :temporary
   require Logger
 
-  @me __MODULE__
   @task_supervisor ExIntegrate.TaskSupervisor
 
   alias ExIntegrate.Boundary.RunManager
@@ -14,16 +13,14 @@ defmodule ExIntegrate.Boundary.PipelineRunner do
 
   # Client API
 
-  def start_link(%Pipeline{} = pipeline) do
-    name = {:via, Registry, {ExIntegrate.Registry.PipelineRunner, pipeline}}
-    GenServer.start_link(__MODULE__, [pipeline: pipeline], name: name)
+  @spec start_link({Pipeline.t(), keyword(atom)}) :: GenServer.on_start()
+  def start_link({%Pipeline{} = pipeline, opts}) when is_list(opts) do
+    name = via(pipeline.name)
+    GenServer.start_link(__MODULE__, {pipeline, opts}, name: name)
   end
 
-  @spec start_link(Access.t()) :: GenServer.on_start_child()
-  def start_link(opts) do
-    name = opts[:name] || @me
-    GenServer.start_link(__MODULE__, opts, name: name)
-  end
+  def via(key),
+    do: {:via, Registry, {ExIntegrate.Registry.PipelineRunner, key}}
 
   @spec launch_pipeline(Pipeline.t()) :: DynamicSupervisor.on_start_child()
   def launch_pipeline(%Pipeline{} = pipeline) do
@@ -36,17 +33,24 @@ defmodule ExIntegrate.Boundary.PipelineRunner do
   # GenServer callbacks
 
   @impl GenServer
-  def init(opts) do
-    initial_state = Access.fetch!(opts, :pipeline) |> Pipeline.advance()
+  def init({pipeline, opts}) do
+    initial_state = Pipeline.advance(pipeline)
+    config = parse_opts(opts)
 
-    log = opts[:log] || true
-    config = %{log: log}
+    {:ok, {initial_state, config}, {:continue, :run_step}}
+  end
 
-    {:ok, {initial_state, config}, {:continue, {:run_step}}}
+  defp parse_opts(opts) do
+    default_config = [log: true, on_completion: &report_results/2]
+
+    default_config
+    |> Keyword.merge(opts)
+    |> Keyword.take(Keyword.keys(default_config))
+    |> Map.new()
   end
 
   @impl GenServer
-  def handle_continue({:run_step}, {state, config}) do
+  def handle_continue(:run_step, {state, config}) do
     current_step = Pipeline.current_step(state)
     Logger.info("Starting step: #{inspect(current_step)}")
 
@@ -69,14 +73,15 @@ defmodule ExIntegrate.Boundary.PipelineRunner do
 
     if Pipeline.complete?(state) do
       msg = "All steps completed successfully. Terminating pipeline #{inspect(state)}"
-      finish_pipeline(state, msg)
+      config.on_completion.(state, msg)
+      shut_down(state)
     else
-      {:noreply, {state, config}, {:continue, {:run_step}}}
+      {:noreply, {state, config}, {:continue, :run_step}}
     end
   end
 
   @impl GenServer
-  def handle_info({ref, {:error, step}}, {state, _config}) do
+  def handle_info({ref, {:error, step}}, {state, config}) do
     Logger.info("Step errored. #{inspect(step)}")
     Process.demonitor(ref, [:flush])
 
@@ -86,22 +91,24 @@ defmodule ExIntegrate.Boundary.PipelineRunner do
       |> Pipeline.advance()
 
     msg = "Step failure. Terminating pipeline #{inspect(state)}"
-    finish_pipeline(state, msg)
+    config.on_completion.(state, msg)
+    shut_down(state)
   end
 
   @impl GenServer
   def handle_info({:DOWN, ref, _, _, reason}, {state, config}) do
-    RunManager.pipeline_completed(state)
-    Logger.info("Step task #{inspect(ref)} terminated unexpectedly. Reason: #{inspect(reason)}")
-    {:stop, :normal, {state, config}}
+    msg = "Step task #{inspect(ref)} terminated unexpectedly. Reason: #{inspect(reason)}"
+    config.on_completion.(state, msg)
+    shut_down(state)
   end
 
-  defp finish_pipeline(state, msg) do
+  defp report_results(state, msg) do
     RunManager.pipeline_completed(state)
     Logger.info(msg)
-
-    {:stop, :normal, state}
   end
+
+  defp shut_down(state),
+    do: {:stop, :normal, state}
 
   @doc deprecated: """
        It runs pipelines using an old, naive, sequential implementation. Use

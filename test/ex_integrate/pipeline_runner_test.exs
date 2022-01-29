@@ -1,24 +1,43 @@
 defmodule ExIntegrate.Boundary.PipelineRunnerTest do
+  @moduledoc false
   use ExUnit.Case, async: true
 
   alias ExIntegrate.Boundary.PipelineRunner
   alias ExIntegrate.Core.Pipeline
   alias ExIntegrate.Core.Step
 
-  test "runs a pipeline with two steps" do
-    step1 = Step.new(name: "echo", command: "echo", args: ["pass me"])
-    step2 = Step.new(name: "echo", command: "echo", args: ["pass me again"])
-    pipeline = Pipeline.new(name: "a pipeline", steps: [step1, step2])
-    test_process = self()
-    ref = make_ref()
+  @timeout 1_000
 
-    log_func = fn result ->
-      send(test_process, {:log, ref, result})
+  setup :create_steps
+
+  test "runs a pipeline", %{steps: steps} do
+    pipeline_name = "a pipeline"
+    pipeline = Pipeline.new(name: pipeline_name, steps: steps)
+
+    {test_process, ref} = {self(), make_ref()}
+
+    on_completion = fn pipeline, _msg ->
+      success_or_failure = result(pipeline, &Pipeline.failed?/1)
+      send(test_process, {success_or_failure, ref, pipeline.name})
     end
 
-    start_supervised!({PipelineRunner, [pipeline: pipeline, log: log_func]})
+    start_supervised!({PipelineRunner, {pipeline, [on_completion: on_completion]}})
+    assert_receive {:success, ^ref, ^pipeline_name}, @timeout
+  end
 
-    assert_receive {:log, ^ref, {_io_type, "pass me\n"}}
-    assert_receive {:log, ^ref, {_io_type, "pass me again\n"}}
+  defp create_steps(_) do
+    int = Enum.random(1..10)
+    steps = Stream.repeatedly(&create_step/0) |> Enum.take(int)
+
+    [steps: steps]
+  end
+
+  defp create_step(),
+    do: Step.new(name: "echo", command: "exit", args: ["0"])
+
+  defp result(val, fun) do
+    if fun.(val),
+      do: :failure,
+      else: :success
   end
 end
