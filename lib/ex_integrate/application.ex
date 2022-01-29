@@ -10,7 +10,7 @@ defmodule ExIntegrate.Application do
     children = [
       # Starts a worker by calling: ExIntegrate.Worker.start_link(arg)
       # {ExIntegrate.Worker, arg}
-      {Task.Supervisor, name: ExIntegrate.TaskSupervisor},
+      {Task.Supervisor, name: ExIntegrate.TaskSupervisor}
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
