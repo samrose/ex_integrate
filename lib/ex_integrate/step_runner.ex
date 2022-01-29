@@ -1,4 +1,13 @@
 defmodule ExIntegrate.Boundary.StepRunner do
+  @moduledoc """
+  Responsible for running `Step`s, the primary units of CI work. See `Step` docs
+  for more information.
+
+  Note that for now, running a step always consists of determing its system
+  executable and making an external system call via `Rambo`. In the future,
+  for testing purposes, it may be desirable to add a mock implementation that
+  avoids the external system call. 
+  """
   alias ExIntegrate.Core.Step
 
   @spec run_step(Step.t()) :: {:ok, Step.t()} | {:error, Step.t()}

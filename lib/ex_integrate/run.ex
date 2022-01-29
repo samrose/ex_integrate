@@ -1,4 +1,17 @@
 defmodule ExIntegrate.Core.Run do
+  @moduledoc """
+  A `Run` represents an entire CI orchestrated workflow, from start to finish.
+
+  A Run consists of many `Pipeline`s, which it runs in parallel except when they
+  depend on each other. Internally, the pipelines are stored in a directed
+  acyclic graph (DAG), and this graph is traversed from start to finish as
+  pipelines are launched and completed.
+
+  The `%Run{}` struct stores
+    * the complete specification for the run's execution,
+    * the results of the run, including the output of all `Step`s, and
+    * metadata.
+  """
   alias ExIntegrate.Core.Pipeline
   alias ExIntegrate.Core.Step
 
@@ -62,9 +75,9 @@ defmodule ExIntegrate.Core.Run do
   end
 
   @doc """
-  Updates the given pipeline in the run's collection.
+    Updates the given pipeline in the run's collection.
 
-  Returns the run with updated pipeline.
+    Returns the run with updated pipeline.
   """
   @spec put_pipeline(t(), Pipeline.t() | pipeline_key, Pipeline.t()) :: t()
   def put_pipeline(%__MODULE__{} = run, %Pipeline{} = old_pipeline, %Pipeline{} = new_pipeline) do

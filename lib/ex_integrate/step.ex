@@ -1,18 +1,18 @@
 defmodule ExIntegrate.Core.Step do
   @moduledoc """
-  Represents a step in the CI pipeline. 
+  Represents a single unit of work in the CI pipeline. Steps run sequentially
+  inside Pipelines.
+
+  A step stores data specifying what is to be executed as well as data about the
+  result of command execution. It has a unique `name`, a `command`, and
+  multiple `args`.
+
+  Note that the `name` must be unique, as it is used internally as a unique key
+  to identify steps.
   """
 
   @enforce_keys [:name, :command, :args]
-
-  defstruct [
-    :args,
-    :command,
-    :name,
-    err: nil,
-    out: nil,
-    status_code: nil
-  ]
+  defstruct @enforce_keys ++ [:err, :out, :status_code]
 
   @type t :: %__MODULE__{
           args: [String.t()],

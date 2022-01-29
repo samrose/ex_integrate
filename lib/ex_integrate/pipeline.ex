@@ -1,4 +1,8 @@
 defmodule ExIntegrate.Core.Pipeline do
+  @moduledoc """
+  A collection of Steps to be run sequentially.
+  """
+
   alias ExIntegrate.Core.Step
   alias ExIntegrate.Core.Zipper
 
