@@ -41,7 +41,7 @@ defmodule ExIntegrate.Boundary.PipelineRunner do
   end
 
   defp parse_opts(opts) do
-    default_config = [on_completion: &report_results/2]
+    default_config = [on_completion: &report_results/1]
 
     default_config
     |> Keyword.merge(opts)
@@ -63,7 +63,7 @@ defmodule ExIntegrate.Boundary.PipelineRunner do
 
   @impl GenServer
   def handle_info({ref, {:ok, step}}, {state, config}) do
-    Logger.info("Step completed. #{inspect(step)}")
+    Logger.info("Step succeeded. #{inspect(step)}")
     Process.demonitor(ref, [:flush])
 
     state =
@@ -72,8 +72,7 @@ defmodule ExIntegrate.Boundary.PipelineRunner do
       |> Pipeline.advance()
 
     if Pipeline.complete?(state) do
-      msg = "All steps completed successfully. Terminating pipeline #{inspect(state)}"
-      config.on_completion.(state, msg)
+      config.on_completion.(state)
       shut_down(state)
     else
       {:noreply, {state, config}, {:continue, :run_step}}
@@ -90,21 +89,27 @@ defmodule ExIntegrate.Boundary.PipelineRunner do
       |> Pipeline.replace_current_step(step)
       |> Pipeline.advance()
 
-    msg = "Step failure. Terminating pipeline #{inspect(state)}"
-    config.on_completion.(state, msg)
+    config.on_completion.(state, :failure)
     shut_down(state)
   end
 
   @impl GenServer
   def handle_info({:DOWN, ref, _, _, reason}, {state, config}) do
-    msg = "Step task #{inspect(ref)} terminated unexpectedly. Reason: #{inspect(reason)}"
-    config.on_completion.(state, msg)
+    Logger.error("Step task #{inspect(ref)} terminated unexpectedly. Reason: #{inspect(reason)}")
+    config.on_completion.(state)
     shut_down(state)
   end
 
-  defp report_results(state, msg) do
-    RunManager.pipeline_completed(state)
+  defp report_results(state) do
+    msg =
+      if Pipeline.failed?(state) do
+        "Pipeline failed. Terminating pipeline #{inspect(state)}"
+      else
+        "Pipeline succeeded. Terminating pipeline #{inspect(state)}"
+      end
+
     Logger.info(msg)
+    RunManager.pipeline_completed(state)
   end
 
   defp shut_down(state),

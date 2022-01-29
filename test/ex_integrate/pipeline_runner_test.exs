@@ -16,7 +16,7 @@ defmodule ExIntegrate.Boundary.PipelineRunnerTest do
 
     {test_process, ref} = {self(), make_ref()}
 
-    on_completion = fn pipeline, _msg ->
+    on_completion = fn pipeline ->
       success_or_failure = result(pipeline, &Pipeline.failed?/1)
       send(test_process, {success_or_failure, ref, pipeline.name})
     end
