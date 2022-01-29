@@ -61,20 +61,22 @@ defmodule ExIntegrate.Boundary.PipelineRunner do
   end
 
   @impl GenServer
-  def handle_info({_ref, {:error, step}}, {state, config}) do
+  def handle_info({_ref, {:error, step}}, {state, _config}) do
     Logger.info("Step errored. #{inspect(step)}")
     {:stop, :step_failure, state}
   end
 
   @impl GenServer
-  def handle_info({:DOWN, ref, _, _, reason}, {state, config}) do
+  def handle_info({:DOWN, ref, _, _, reason}, {state, _config}) do
     Logger.info("Step task #{inspect(ref)} terminated unexpectedly. Reason: #{inspect(reason)}")
     {:stop, :step_failure, state}
   end
 
-  @deprecated """
-  It runs pipelines using an old, naive, sequential implementation. Use #{__MODULE__}.start_link/1 instead for the recommended concurrent implementation.
-  """
+  @doc deprecated: """
+       It runs pipelines using an old, naive, sequential implementation. Use
+       #{__MODULE__}.start_link/1 instead for the recommended concurrent
+       implementation.
+       """
   def run_pipeline(%Pipeline{} = pipeline) do
     Enum.reduce(pipeline.steps, pipeline, fn step, acc ->
       case StepRunner.run_step(step) do

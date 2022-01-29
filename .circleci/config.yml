@@ -24,7 +24,22 @@ jobs:
       - checkout
 
       # specify any bash command here prefixed with `run: `
-      - run: mix local.hex --force
-      - run: mix deps.get
-      - run: mix test
- 
+      - run:
+          name: Install Mix dependencies
+          command: |
+            mix local.hex --force
+            mix deps.get
+      - run:
+          name: Compile
+          command: mix compile --warnings-as-errors
+      - run:
+          name: Run tests
+          command: mix test
+      - run:
+          name: Check formatting
+          command: mix format --check-formatted
+      - run:
+          name: Lint with Credo
+          # Should this use --strict ?
+          # https://hexdocs.pm/credo/basic_usage.html#strict-analysis
+          command: mix credo
