@@ -19,6 +19,12 @@ defmodule ExIntegrate.Core.Pipeline do
           steps: Zipper.t(Step.t())
         }
 
+  @spec new(fields :: Access.t()) :: t
+  def new(fields) do
+    fields = put_in(fields[:steps], Zipper.zip(fields[:steps]))
+    struct!(__MODULE__, fields)
+  end
+
   @spec steps(t) :: [Step.t()]
   def steps(%__MODULE__{} = pipeline),
     do: Zipper.to_list(pipeline.steps)
@@ -81,6 +87,14 @@ defmodule ExIntegrate.Core.Pipeline do
           Attempted new step: #{inspect(new_step)}
           """
   end
+
+  @spec failed?(t) :: boolean
+  def failed?(%__MODULE__{} = pipeline),
+    do: pipeline.failed?
+
+  @spec complete?(t) :: boolean
+  def complete?(%__MODULE__{} = pipeline),
+    do: failed?(pipeline) or Zipper.end?(pipeline.steps)
 
   @impl Access
   @spec fetch(t, String.t()) :: {:ok, Step.t()}
