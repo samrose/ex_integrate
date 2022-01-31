@@ -89,7 +89,7 @@ defmodule ExIntegrate.Boundary.PipelineRunner do
       |> Pipeline.replace_current_step(step)
       |> Pipeline.advance()
 
-    config.on_completion.(state, :failure)
+    config.on_completion.(state)
     shut_down(state)
   end
 
