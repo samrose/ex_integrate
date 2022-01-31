@@ -7,9 +7,9 @@ alias ExIntegrate.Core.Pipeline
 alias ExIntegrate.Core.Run
 alias ExIntegrate.Core.Step
 
-# parse ei.json into memory for convenience
-run =
-  "ei.json"
-  |> File.read!()
-  |> Jason.decode!()
-  |> Run.new()
+# parse example configs into memory for convenience
+run = "ei.json" |> File.read!() |> Jason.decode!() |> Run.new()
+failing_run = "test/fixtures/fail.json" |> File.read!() |> Jason.decode!() |> Run.new()
+
+failing_dependent_run =
+  "test/fixtures/fail_dependent.json" |> File.read!() |> Jason.decode!() |> Run.new()

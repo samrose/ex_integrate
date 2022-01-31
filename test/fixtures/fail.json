@@ -1,0 +1,30 @@
+{
+  "pipelines": [
+    {
+      "name": "foo",
+      "steps": [
+        {
+          "name": "PASS",
+          "command": "echo",
+          "args": [
+            "step 1"
+          ]
+        },
+        {
+          "name": "FAIL",
+          "command": "sh",
+          "args": [
+            "test/fixtures/error_1.sh"
+          ]
+        },
+        {
+          "name": "PASS",
+          "command": "echo",
+          "args": [
+            "step 3"
+          ]
+        }
+      ]
+    }
+  ]
+}
