@@ -7,6 +7,6 @@ defmodule Mix.Tasks.EiTest do
 
   test "runs an ExIntegrate build using the config file" do
     assert EiTask.run(["--config", @ei_config_path]) ==
-             ExIntegrate.run_pipelines_from_file(@ei_config_path)
+             ExIntegrate.run_from_file(@ei_config_path)
   end
 end

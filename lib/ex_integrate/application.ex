@@ -12,8 +12,8 @@ defmodule ExIntegrate.Application do
       {Task.Supervisor, name: ExIntegrate.TaskSupervisor},
       {Registry, name: ExIntegrate.Registry.PipelineRunner, keys: :unique},
       {DynamicSupervisor, name: ExIntegrate.Supervisor.PipelineRunner, strategy: :one_for_one},
-      {ExIntegrate.Boundary.RunManager, [name: ExIntegrate.Boundary.RunManager]},
-      {ExIntegrate, [name: ExIntegrate]}
+      {ExIntegrate.Boundary.Server, [name: ExIntegrate.Boundary.Server]},
+      {ExIntegrate.Boundary.RunManager, [name: ExIntegrate.Boundary.RunManager]}
     ]
 
     opts = [strategy: :one_for_one, name: ExIntegrate.Supervisor]

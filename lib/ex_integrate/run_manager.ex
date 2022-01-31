@@ -1,4 +1,9 @@
 defmodule ExIntegrate.Boundary.RunManager do
+  @moduledoc """
+  Kicks off a run and returns the result as an `{:ok, run}` or `{:error, run}`
+  tuple.
+  """
+
   use GenServer, restart: :permanent
   require Logger
 

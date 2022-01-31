@@ -1,62 +1,58 @@
 defmodule ExIntegrateTest do
-  use ExUnit.Case
-  import ExUnit.CaptureIO
+  use ExUnit.Case, async: true
 
-  alias ExIntegrate.Core.Pipeline
   alias ExIntegrate.Core.Run
-  alias ExIntegrate.Core.Step
 
   @config_fixture_path "test/fixtures/ei.test.json"
+  @moduletag timeout: 10_000
 
   describe "running the steps from a config file" do
     test "success: runs pipeline steps in order and returns success tuple" do
-      assert {:ok, %Run{}} = ExIntegrate.run_pipelines_from_file(@config_fixture_path)
+      assert {:ok, %Run{}} = ExIntegrate.run_from_file(@config_fixture_path)
     end
 
     test "when file doesn't exist, raises error" do
       assert_raise File.Error, fn ->
-        ExIntegrate.run_pipelines_from_file("nonexistant_file")
+        ExIntegrate.run_from_file("nonexistant_file")
       end
     end
   end
 
   describe "run" do
-    @failing_script "test/fixtures/error_1.sh"
+    @run_params %{
+      "pipelines" => [
+        %{
+          "steps" => [
+            %{
+              "name" => "passing step",
+              "command" => "echo",
+              "args" => ["I will pass"]
+            }
+          ]
+        }
+      ]
+    }
 
     test "when all steps pass, returns :ok tuple with run data" do
-      config_params = %{
-        "pipelines" => [
-          %{
-            "steps" => [
-              %{
-                "name" => "passing step",
-                "command" => "echo",
-                "args" => ["I will pass"]
-              }
-            ]
-          }
-        ]
-      }
-
-      assert {:ok, %Run{}} = ExIntegrate.run_pipelines(config_params)
+      assert {:ok, %Run{}} = ExIntegrate.run(@run_params)
     end
 
-    test "when a step fails, returns error tuple" do
-      config_params = %{
-        "pipelines" => [
-          %{
-            "steps" => [
-              %{
-                "name" => "failing step",
-                "command" => "bash",
-                "args" => [@failing_script]
-              }
-            ]
-          }
-        ]
-      }
+    @failing_run_params %{
+      "pipelines" => [
+        %{
+          "steps" => [
+            %{
+              "name" => "failing step",
+              "command" => "cat",
+              "args" => ["nonexistant"]
+            }
+          ]
+        }
+      ]
+    }
 
-      assert {:error, _} = ExIntegrate.run_pipelines(config_params)
+    test "when a step fails, returns error tuple with run data" do
+      assert {:error, %Run{}} = ExIntegrate.run(@failing_run_params)
     end
   end
 end
