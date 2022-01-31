@@ -1,7 +1,9 @@
 defmodule ExIntegrate.Boundary.RunManager do
   @moduledoc """
   Kicks off a run and returns the result as an `{:ok, run}` or `{:error, run}`
-  tuple.
+  tuple. For now, manages one run at a time.
+
+  Runs as a singleton process.
   """
 
   use GenServer, restart: :permanent
@@ -11,16 +13,17 @@ defmodule ExIntegrate.Boundary.RunManager do
   alias ExIntegrate.Core.Run
   alias ExIntegrate.Core.Pipeline
 
-  @server RunManager
+  @server __MODULE__
 
   # API
 
-  def start_link(_),
-    do: GenServer.start_link(__MODULE__, nil, name: @server)
-
-  def start_run(server \\ @server, %Run{} = run) do
-    GenServer.call(server, {:start_run, run})
+  def start_link(opts) do
+    name = opts[:name] || @server
+    GenServer.start_link(__MODULE__, nil, name: name)
   end
+
+  def run(server \\ @server, %Run{} = run),
+    do: GenServer.call(server, {:run, run})
 
   def pipeline_completed(server \\ @server, %Pipeline{} = pipeline),
     do: GenServer.call(server, {:pipeline_completed, pipeline})
@@ -61,15 +64,13 @@ defmodule ExIntegrate.Boundary.RunManager do
   # Set up initial state and kick off the run
   # Do not reply yet, as the run hasn't been completed yet
   @impl GenServer
-  def handle_call({:start_run, run}, from, nil = _run) do
+  def handle_call({:run, run}, from, nil = _run) do
     current_pipeline = Run.pipeline_root(run)
     {:noreply, {run, from}, {:continue, {:start_next_pipelines, current_pipeline}}}
-
-    # {:reply, :ok, {run, from}, {:continue, {:start_next_pipelines, current_pipeline}}}
   end
 
   # If state is not `nil`, then the run is already running
-  def handle_call({:start_run, _run}, _from, {run, from}) do
+  def handle_call({:run, _run}, _from, {run, from}) do
     {:reply, {:error, :already_running}, {run, from}}
   end
 

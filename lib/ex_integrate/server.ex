@@ -23,6 +23,6 @@ defmodule ExIntegrate.Boundary.Server do
 
   @impl GenServer
   def handle_call({:run, run}, _from, state) do
-    {:reply, RunManager.start_run(run), state}
+    {:reply, RunManager.run(run), state}
   end
 end
