@@ -10,12 +10,12 @@ defmodule ExIntegrate.Boundary.RunManager do
 
   # API
 
-  def start_link(_) do
-    GenServer.start_link(__MODULE__, nil, name: @server)
-  end
+  def start_link(_),
+    do: GenServer.start_link(__MODULE__, nil, name: @server)
 
-  def start_run(server \\ @server, %Run{} = run),
-    do: GenServer.call(server, {:start_run, run})
+  def start_run(server \\ @server, %Run{} = run) do
+    GenServer.call(server, {:start_run, run})
+  end
 
   def pipeline_completed(server \\ @server, %Pipeline{} = pipeline),
     do: GenServer.call(server, {:pipeline_completed, pipeline})
@@ -27,45 +27,53 @@ defmodule ExIntegrate.Boundary.RunManager do
     {:ok, nil}
   end
 
-  def handle_continue({:start_next_pipelines, _current_pipeline}, {state, 0}) do
+  def handle_continue({:start_next_pipelines, _current_pipeline}, {%{count: 0} = run, from}) do
     Logger.info("Run completed")
-    {:stop, :normal, state}
+
+    ok_or_error = if Run.failed?(run), do: :error, else: :ok
+
+    GenServer.reply(from, {ok_or_error, run})
+    {:noreply, nil}
   end
 
   @impl GenServer
-  def handle_continue({:start_next_pipelines, current_pipeline}, {state, count}) do
-    state
-    |> Run.next_pipelines(current_pipeline)
-    |> Enum.each(&PipelineRunner.launch_pipeline/1)
+  def handle_continue({:start_next_pipelines, current_pipeline}, {run, from}) do
+    if Run.failed?(run) do
+      # don't launch any more pipeline runners
 
-    {:noreply, {state, count}}
+      {:noreply, {run, from}}
+    else
+      # continue launching pipeline runners
+      run
+      |> Run.next_pipelines(current_pipeline)
+      |> Enum.each(&PipelineRunner.launch_pipeline/1)
+
+      {:noreply, {run, from}}
+    end
   end
 
   # Starting a run:
-  # Set up initial state and count
+  # Set up initial state and kick off the run
+  # Do not reply yet, as the run hasn't been completed yet
   @impl GenServer
-  def handle_call({:start_run, run}, _from, nil = _state) do
+  def handle_call({:start_run, run}, from, nil = _run) do
     current_pipeline = Run.pipeline_root(run)
-    count = run.end_nodes
-    {:reply, :ok, {run, count}, {:continue, {:start_next_pipelines, current_pipeline}}}
+    {:noreply, {run, from}, {:continue, {:start_next_pipelines, current_pipeline}}}
+
+    # {:reply, :ok, {run, from}, {:continue, {:start_next_pipelines, current_pipeline}}}
   end
 
-  def handle_call({:start_run, _run}, _from, state) do
-    {:reply, {:error, :already_running}, state}
+  # If state is not `nil`, then the run is already running
+  def handle_call({:start_run, _run}, _from, {run, from}) do
+    {:reply, {:error, :already_running}, {run, from}}
   end
 
-  def handle_call({:pipeline_completed, %Pipeline{} = pipeline}, _from, {state, count}) do
-    new_state = Run.put_pipeline(state, pipeline.name, pipeline)
-    new_count = maybe_dec_count(count, new_state, pipeline)
+  def handle_call({:pipeline_completed, %Pipeline{} = pipeline}, _from, {run, from}) do
+    run =
+      run
+      |> Run.put_pipeline(pipeline.name, pipeline)
+      |> Run.check_final_pipeline(pipeline)
 
-    {:reply, :ok, {new_state, new_count}, {:continue, {:start_next_pipelines, pipeline}}}
-  end
-
-  defp maybe_dec_count(count, run, pipeline) do
-    if pipeline in Run.final_pipelines(run) do
-      count - 1
-    else
-      count
-    end
+    {:reply, :ok, {run, from}, {:continue, {:start_next_pipelines, pipeline}}}
   end
 end

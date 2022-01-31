@@ -102,4 +102,18 @@ defmodule ExIntegrate.RunTest do
 
     assert [^second_pipeline] = Run.next_pipelines(run, first_pipeline)
   end
+
+  @tag :skip
+  test "updates whether pipelines have been run or SHOULD be run" do
+    flunk("""
+    Consider decorating the pipeline graph with Libgraph's labels for Edges or
+    Vertices to designate whether a pipeline/edge has been traversed, or
+    SHOULD be traversed. Ideally move all logic for detecting whether to
+    proceed to the next pipeline to the core Run module, and depend on it from
+    RunManager.
+
+    It would be good to replace the simple counter with a better, more flexible,
+    pure functional, and better-tested implementation.
+    """)
+  end
 end

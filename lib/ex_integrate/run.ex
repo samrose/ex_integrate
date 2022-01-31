@@ -17,10 +17,12 @@ defmodule ExIntegrate.Core.Run do
 
   @behaviour Access
 
-  @enforce_keys [:pipelines, :end_nodes]
-  defstruct @enforce_keys ++ [failed?: false]
+  @enforce_keys [:pipelines, :end_nodes, :count]
+  defstruct @enforce_keys ++ [failed?: false, active_pipelines: []]
 
   @type t :: %__MODULE__{
+          active_pipelines: [Pipeline.key()],
+          count: non_neg_integer,
           end_nodes: non_neg_integer,
           failed?: boolean,
           pipelines: Graph.t()
@@ -35,8 +37,9 @@ defmodule ExIntegrate.Core.Run do
   def new(params) do
     pipelines = set_up_pipeline_graph(params)
     end_nodes = pipelines |> do_final_pipelines() |> length()
+    count = end_nodes
 
-    struct!(__MODULE__, pipelines: pipelines, end_nodes: end_nodes)
+    struct!(__MODULE__, pipelines: pipelines, end_nodes: end_nodes, count: count)
   end
 
   defp set_up_pipeline_graph(params) do
@@ -135,6 +138,23 @@ defmodule ExIntegrate.Core.Run do
   @spec final_pipelines(t()) :: [Pipeline.t()]
   def final_pipelines(%__MODULE__{} = run) do
     do_final_pipelines(run.pipelines)
+  end
+
+  @doc """
+  Checks whether the given pipeline is one of the final pipelines in the
+  pipeline graph.
+
+  If so, decrements the count by 1. If not, does nothing.
+  """
+  @spec check_final_pipeline(t, Pipeline.t()) :: t
+  def check_final_pipeline(%__MODULE__{} = run, %Pipeline{} = pipeline) do
+    Map.update(run, :count, run.count, fn count ->
+      if pipeline in final_pipelines(run) do
+        count - 1
+      else
+        count
+      end
+    end)
   end
 
   @impl Access
