@@ -114,19 +114,4 @@ defmodule ExIntegrate.Boundary.PipelineRunner do
 
   defp shut_down(state),
     do: {:stop, :normal, state}
-
-  @doc deprecated: """
-       It runs pipelines using an old, naive, sequential implementation. Use
-       #{__MODULE__}.start_link/1 instead for the recommended concurrent
-       implementation.
-       """
-  def run_pipeline(%Pipeline{} = pipeline) do
-    pipeline
-    |> Pipeline.steps()
-    |> Enum.reduce(pipeline, fn step, acc ->
-      with {_ok_or_error, completed_step} <- StepRunner.run_step(step) do
-        Pipeline.put_step(acc, step, completed_step)
-      end
-    end)
-  end
 end
