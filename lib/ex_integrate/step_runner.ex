@@ -13,6 +13,7 @@ defmodule ExIntegrate.Boundary.StepRunner do
 
   @spec run_step(Step.t(), Access.t()) :: {:ok, Step.t()} | {:error, Step.t()}
   def run_step(%Step{} = step, opts \\ []) do
+    # credo:disable-for-next-line
     # TODO: handle cases where no executable can be found
     command_path = System.find_executable(step.command)
     log_command_output = opts[:log] || (&log_command_output(&1, command_path))
