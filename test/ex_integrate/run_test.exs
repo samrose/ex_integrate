@@ -3,7 +3,6 @@ defmodule ExIntegrate.RunTest do
 
   alias ExIntegrate.Core.Run
   alias ExIntegrate.Core.Pipeline
-  alias ExIntegrate.Core.Step
 
   @pipeline_params %{
     "name" => "say hello",
@@ -42,38 +41,39 @@ defmodule ExIntegrate.RunTest do
     assert [^pipeline1] = Graph.neighbors(run.pipelines, pipeline2)
   end
 
-  test "update pipeline" do
-    run = Run.new(@run_params)
-    assert pipeline = run |> Run.pipelines() |> hd()
-    updated_pipeline = %Pipeline{name: "updated pipeline", steps: []}
+  describe "updating a pipeline" do
+    test "on pipeline success, updates the pipelines" do
+      run = Run.new(@run_params)
+      assert pipeline = run |> Run.pipelines() |> hd()
+      updated_pipeline = pipeline |> Pipeline.advance()
 
-    assert run = Run.put_pipeline(run, pipeline, updated_pipeline)
+      run = Run.put_pipeline(run, pipeline, updated_pipeline)
+      refute Run.failed?(run), "Expected run not to have failed. #{inspect(run)}"
 
-    assert Run.has_pipeline?(run, updated_pipeline),
-           """
-           Expected pipelines:
+      assert Run.has_pipeline?(run, updated_pipeline),
+             """
+             Expected pipelines:
 
-           #{inspect(run.pipelines)}
+             #{inspect(run.pipelines)}
 
-           to include pipeline:
+             to include pipeline:
 
-           #{inspect(pipeline)}.
-           """
-  end
+             #{inspect(pipeline)}.
+             """
+    end
 
-  test "checks if a run has failed" do
-    run = Run.new(@run_params)
-    refute Run.failed?(run)
+    test "if updated pipeline failed, then the run has failed" do
+      run = Run.new(@run_params)
+      refute Run.failed?(run)
 
-    pipeline = run |> Run.pipelines() |> hd()
+      pipeline = run |> Run.pipelines() |> hd()
+      step = pipeline |> Pipeline.steps() |> hd
+      failed_pipeline = Pipeline.put_step(pipeline, step, %{step | status_code: 1})
+      failed_run = Run.put_pipeline(run, pipeline, failed_pipeline)
 
-    failed_pipeline = %Pipeline{
-      name: "a failed pipeline",
-      steps: [%Step{status_code: 1, name: "a failed step", command: "foo", args: []}]
-    }
-
-    failed_run = Run.put_pipeline(run, pipeline, failed_pipeline)
-    assert Run.failed?(failed_run), "Expected run to have failed.\n\n#{inspect(failed_run)}"
+      assert Run.failed?(failed_run),
+             "Expected run to have failed.\n\n#{inspect(failed_run)}"
+    end
   end
 
   test "look up a pipeline by name" do
@@ -84,23 +84,15 @@ defmodule ExIntegrate.RunTest do
 
   test "get and update a run's pipeline" do
     run = Run.new(%{"pipelines" => [@pipeline_params]})
-    pipeline_name = @pipeline_params["name"]
-    new_pipeline = %Pipeline{name: "new pipeline", steps: []}
+    %{name: pipeline_name} = pipeline = run |> Run.pipelines() |> hd
+    updated_pipeline = pipeline |> Pipeline.advance()
 
     assert {%{name: ^pipeline_name}, updated_run} =
              Run.get_and_update(run, pipeline_name, fn pipeline ->
-               {pipeline, new_pipeline}
+               {pipeline, updated_pipeline}
              end)
 
-    assert ^new_pipeline = updated_run[new_pipeline.name]
-  end
-
-  test "modify and read a run's active pipelines" do
-    run = Run.new(@run_params)
-    pipeline = run |> Run.pipelines() |> hd()
-
-    run = Run.activate_pipelines(run, [pipeline])
-    assert [pipeline] == Run.active_pipelines(run)
+    assert ^updated_pipeline = updated_run[updated_pipeline.name]
   end
 
   test "return the next pipelines to launch" do
@@ -108,6 +100,20 @@ defmodule ExIntegrate.RunTest do
     first_pipeline = run[@pipeline_params["name"]]
     second_pipeline = run[@dependent_pipeline_params["name"]]
 
-    assert [second_pipeline] = Run.next_pipelines(run, first_pipeline)
+    assert [^second_pipeline] = Run.next_pipelines(run, first_pipeline)
+  end
+
+  @tag :skip
+  test "updates whether pipelines have been run or SHOULD be run" do
+    flunk("""
+    Consider decorating the pipeline graph with Libgraph's labels for Edges or
+    Vertices to designate whether a pipeline/edge has been traversed, or
+    SHOULD be traversed. Ideally move all logic for detecting whether to
+    proceed to the next pipeline to the core Run module, and depend on it from
+    RunManager.
+
+    It would be good to replace the simple counter with a better, more flexible,
+    pure functional, and better-tested implementation.
+    """)
   end
 end

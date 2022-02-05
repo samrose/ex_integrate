@@ -9,7 +9,7 @@ defmodule ExIntegrate.Core.Pipeline do
   @behaviour Access
 
   @enforce_keys [:name, :steps]
-  defstruct @enforce_keys ++ [failed?: false, completed_steps: []]
+  defstruct @enforce_keys ++ [failed?: false]
 
   @type key :: String.t()
 
@@ -19,27 +19,11 @@ defmodule ExIntegrate.Core.Pipeline do
           steps: Zipper.t(Step.t())
         }
 
-  @spec new(Enum.t()) :: t
+  @spec new(fields :: Access.t()) :: t
   def new(fields) do
-    fields = update_in(fields[:steps], &Zipper.zip/1)
+    fields = put_in(fields[:steps], Zipper.zip(fields[:steps]))
     struct!(__MODULE__, fields)
   end
-
-  @spec complete_step(t, Step.t()) :: t
-  def complete_step(%__MODULE__{} = pipeline, %Step{} = step),
-    do: %{pipeline | completed_steps: [step] ++ pipeline.completed_steps}
-
-  @spec fail(t) :: t
-  def fail(%__MODULE__{} = pipeline),
-    do: %{pipeline | failed?: true}
-
-  @spec failed?(t) :: boolean
-  def failed?(%__MODULE__{} = pipeline),
-    do: Enum.any?(pipeline.steps, &Step.failed?/1)
-
-  @spec complete?(t) :: boolean
-  def complete?(%__MODULE__{} = pipeline),
-    do: Zipper.end?(pipeline.steps)
 
   @spec steps(t) :: [Step.t()]
   def steps(%__MODULE__{} = pipeline),
@@ -61,27 +45,56 @@ defmodule ExIntegrate.Core.Pipeline do
   def current_step(%__MODULE__{} = pipeline),
     do: Zipper.node(pipeline.steps)
 
-  @spec replace_current_step(t, Step.t()) :: t
-  def replace_current_step(%__MODULE__{} = pipeline, %Step{} = step) do
-    updated_steps = Zipper.put_current(pipeline.steps, step)
-    %{pipeline | steps: updated_steps}
-  end
-
   @spec get_step_by_name(t, String.t()) :: Step.t()
   def get_step_by_name(%__MODULE__{} = pipeline, step_name) do
     pipeline
     |> steps()
-    |> Enum.find(fn step -> step.name == step_name end)
+    |> Enum.find(&(&1.name == step_name))
+  end
+
+  @spec replace_current_step(t, Step.t()) :: t
+  def replace_current_step(%__MODULE__{} = pipeline, %Step{} = step) do
+    put_step(pipeline, current_step(pipeline), step)
+  end
+
+  def replace_step_and_advance(%__MODULE__{} = pipeline, %Step{} = step) do
+    pipeline
+    |> replace_current_step(step)
+    |> advance()
   end
 
   @spec put_step(t, Step.t(), Step.t()) :: t
-  def put_step(%__MODULE__{} = pipeline, %Step{} = old_step, %Step{} = new_step) do
-    i = pipeline |> steps |> Enum.find_index(fn step -> step.name == old_step.name end)
-
+  def put_step(
+        %__MODULE__{} = pipeline,
+        %Step{name: name} = _old_step,
+        %Step{name: name} = new_step
+      ) do
     pipeline
-    |> steps()
-    |> List.replace_at(i, new_step)
+    |> Map.update(:steps, pipeline.steps, fn steps ->
+      index = pipeline |> steps() |> Enum.find_index(&(&1.name == name))
+      Zipper.replace_at(steps, index, new_step)
+    end)
+    |> Map.put(:failed?, pipeline.failed? || Step.failed?(new_step))
   end
+
+  def put_step(%__MODULE__{}, %Step{} = old_step, %Step{} = new_step) do
+    raise ArgumentError,
+          """
+          cannot alter step names after creation!
+
+          Old step: #{inspect(old_step)},
+
+          Attempted new step: #{inspect(new_step)}
+          """
+  end
+
+  @spec failed?(t) :: boolean
+  def failed?(%__MODULE__{} = pipeline),
+    do: pipeline.failed?
+
+  @spec complete?(t) :: boolean
+  def complete?(%__MODULE__{} = pipeline),
+    do: failed?(pipeline) or Zipper.end?(pipeline.steps)
 
   @impl Access
   @spec fetch(t, String.t()) :: {:ok, Step.t()}

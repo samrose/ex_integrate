@@ -17,11 +17,14 @@ defmodule ExIntegrate.Core.Run do
 
   @behaviour Access
 
-  @enforce_keys [:pipelines]
-  defstruct @enforce_keys ++ [active_pipelines: []]
+  @enforce_keys [:pipelines, :end_nodes, :count]
+  defstruct @enforce_keys ++ [failed?: false, active_pipelines: []]
 
   @type t :: %__MODULE__{
-          active_pipelines: [Pipeline.t()],
+          active_pipelines: [Pipeline.key()],
+          count: non_neg_integer,
+          end_nodes: non_neg_integer,
+          failed?: boolean,
           pipelines: Graph.t()
         }
 
@@ -33,8 +36,10 @@ defmodule ExIntegrate.Core.Run do
   @spec new(params :: map) :: t()
   def new(params) do
     pipelines = set_up_pipeline_graph(params)
+    end_nodes = pipelines |> do_final_pipelines() |> length()
+    count = end_nodes
 
-    struct!(__MODULE__, pipelines: pipelines)
+    struct!(__MODULE__, pipelines: pipelines, end_nodes: end_nodes, count: count)
   end
 
   defp set_up_pipeline_graph(params) do
@@ -53,16 +58,15 @@ defmodule ExIntegrate.Core.Run do
         }
       end)
 
-    pipeline = struct!(Pipeline, name: pipeline_attrs["name"], steps: steps)
+    pipeline = Pipeline.new(name: pipeline_attrs["name"], steps: steps)
 
-    case pipeline_attrs["depends_on"] do
-      nil ->
-        Graph.add_edge(graph, @pipeline_root, pipeline, [pipeline_attrs["name"]])
+    parent_pipeline =
+      case pipeline_attrs["depends_on"] do
+        nil -> @pipeline_root
+        parent_pipeline_name -> look_up_pipeline(graph, parent_pipeline_name)
+      end
 
-      dependent_pipeline_name ->
-        dependent_pipeline = look_up_pipeline(graph, dependent_pipeline_name)
-        Graph.add_edge(graph, dependent_pipeline, pipeline)
-    end
+    Graph.add_edge(graph, parent_pipeline, pipeline)
   end
 
   defp look_up_pipeline(pipeline_graph, pipeline_name) do
@@ -74,6 +78,15 @@ defmodule ExIntegrate.Core.Run do
     end)
   end
 
+  defp do_final_pipelines(pipeline_graph) do
+    Graph.Reducers.Dfs.reduce(pipeline_graph, [], fn pipeline, acc ->
+      case Graph.out_degree(pipeline_graph, pipeline) do
+        0 -> {:next, [pipeline | acc]}
+        _ -> {:skip, acc}
+      end
+    end)
+  end
+
   @doc """
     Updates the given pipeline in the run's collection.
 
@@ -82,20 +95,16 @@ defmodule ExIntegrate.Core.Run do
   @spec put_pipeline(t(), Pipeline.t() | pipeline_key, Pipeline.t()) :: t()
   def put_pipeline(%__MODULE__{} = run, %Pipeline{} = old_pipeline, %Pipeline{} = new_pipeline) do
     updated_pipelines = Graph.replace_vertex(run.pipelines, old_pipeline, new_pipeline)
-    Map.put(run, :pipelines, updated_pipelines)
+
+    run
+    |> Map.put(:pipelines, updated_pipelines)
+    |> Map.put(:failed?, run.failed? || Pipeline.failed?(new_pipeline))
   end
 
   def put_pipeline(%__MODULE__{} = run, old_pipeline_name, %Pipeline{} = new_pipeline) do
     old_pipeline = run[old_pipeline_name]
     put_pipeline(run, old_pipeline, new_pipeline)
   end
-
-  @spec activate_pipelines(t(), [Pipeline.t()]) :: t()
-  def activate_pipelines(%__MODULE__{} = run, pipelines) when is_list(pipelines) do
-    %{run | active_pipelines: pipelines}
-  end
-
-  def active_pipelines(%__MODULE__{} = run), do: run.active_pipelines
 
   @doc """
   Returns true if the pipeline is included in the run; otherwise, returns false.
@@ -106,11 +115,7 @@ defmodule ExIntegrate.Core.Run do
   end
 
   @spec failed?(t()) :: boolean
-  def failed?(%__MODULE__{} = run) do
-    run
-    |> pipelines()
-    |> Enum.any?(&Pipeline.failed?/1)
-  end
+  def failed?(%__MODULE__{} = run), do: run.failed?
 
   @spec pipeline_root(t()) :: pipeline_root
   def pipeline_root(%__MODULE__{} = run) do
@@ -128,6 +133,28 @@ defmodule ExIntegrate.Core.Run do
   @spec next_pipelines(t(), Pipeline.t() | pipeline_root) :: [Pipeline.t()]
   def next_pipelines(%__MODULE__{} = run, pipeline) do
     Graph.out_neighbors(run.pipelines, pipeline)
+  end
+
+  @spec final_pipelines(t()) :: [Pipeline.t()]
+  def final_pipelines(%__MODULE__{} = run) do
+    do_final_pipelines(run.pipelines)
+  end
+
+  @doc """
+  Checks whether the given pipeline is one of the final pipelines in the
+  pipeline graph.
+
+  If so, decrements the count by 1. If not, does nothing.
+  """
+  @spec check_final_pipeline(t, Pipeline.t()) :: t
+  def check_final_pipeline(%__MODULE__{} = run, %Pipeline{} = pipeline) do
+    Map.update(run, :count, run.count, fn count ->
+      if pipeline in final_pipelines(run) do
+        count - 1
+      else
+        count
+      end
+    end)
   end
 
   @impl Access

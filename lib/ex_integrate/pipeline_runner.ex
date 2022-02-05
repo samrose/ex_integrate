@@ -5,38 +5,57 @@ defmodule ExIntegrate.Boundary.PipelineRunner do
   use GenServer, restart: :temporary
   require Logger
 
-  @me __MODULE__
   @task_supervisor ExIntegrate.TaskSupervisor
 
+  alias ExIntegrate.Boundary.RunManager
   alias ExIntegrate.Boundary.StepRunner
   alias ExIntegrate.Core.Pipeline
 
   # Client API
 
-  @spec start_link(Access.t()) :: {:ok, pid} | {:error, term} | :ignore
-  def start_link(opts) do
-    name = opts[:name] || @me
-    GenServer.start_link(__MODULE__, opts, name: name)
+  @spec start_link({Pipeline.t(), keyword(atom)}) :: GenServer.on_start()
+  def start_link({%Pipeline{} = pipeline, opts}) when is_list(opts) do
+    name = via(pipeline.name)
+    GenServer.start_link(__MODULE__, {pipeline, opts}, name: name)
+  end
+
+  def via(key),
+    do: {:via, Registry, {ExIntegrate.Registry.PipelineRunner, key}}
+
+  @spec launch_pipeline(Pipeline.t()) :: DynamicSupervisor.on_start_child()
+  def launch_pipeline(%Pipeline{} = pipeline) do
+    DynamicSupervisor.start_child(
+      ExIntegrate.Supervisor.PipelineRunner,
+      {__MODULE__, {pipeline, []}}
+    )
   end
 
   # GenServer callbacks
 
   @impl GenServer
-  def init(opts) do
-    initial_state = Access.fetch!(opts, :pipeline) |> Pipeline.advance()
+  def init({pipeline, opts}) do
+    initial_state = Pipeline.advance(pipeline)
+    config = parse_opts(opts)
 
-    log = opts[:log] || true
-    config = %{log: log}
+    {:ok, {initial_state, config}, {:continue, :run_step}}
+  end
 
-    {:ok, {initial_state, config}, {:continue, {:run_step}}}
+  defp parse_opts(opts) do
+    default_config = [on_completion: &report_results/1]
+
+    default_config
+    |> Keyword.merge(opts)
+    |> Keyword.take(Keyword.keys(default_config))
+    |> Map.new()
   end
 
   @impl GenServer
-  def handle_continue({:run_step}, {state, config}) do
+  def handle_continue(:run_step, {state, config}) do
+    current_step = Pipeline.current_step(state)
+    Logger.info("Starting step: #{inspect(current_step)}")
+
     Task.Supervisor.async_nolink(@task_supervisor, fn ->
-      current_step = Pipeline.current_step(state)
-      Logger.info("Starting step: #{inspect(current_step)}")
-      StepRunner.run_step(current_step, log: config.log)
+      StepRunner.run_step(current_step)
     end)
 
     {:noreply, {state, config}}
@@ -44,50 +63,55 @@ defmodule ExIntegrate.Boundary.PipelineRunner do
 
   @impl GenServer
   def handle_info({ref, {:ok, step}}, {state, config}) do
-    Logger.info("Step completed. #{inspect(step)}")
+    Logger.info("Step succeeded. #{inspect(step)}")
     Process.demonitor(ref, [:flush])
 
-    new_state =
+    state =
       state
       |> Pipeline.replace_current_step(step)
       |> Pipeline.advance()
 
-    if Pipeline.complete?(new_state) do
-      Logger.info("All steps completed successfully. Terminating pipeline #{inspect(new_state)}")
-      {:stop, :normal, {new_state, config}}
+    if Pipeline.complete?(state) do
+      config.on_completion.(state)
+      shut_down(state)
     else
-      {:noreply, {new_state, config}, {:continue, {:run_step}}}
+      {:noreply, {state, config}, {:continue, :run_step}}
     end
   end
 
   @impl GenServer
-  def handle_info({_ref, {:error, step}}, {state, _config}) do
+  def handle_info({ref, {:error, step}}, {state, config}) do
     Logger.info("Step errored. #{inspect(step)}")
-    {:stop, :step_failure, state}
+    Process.demonitor(ref, [:flush])
+
+    state =
+      state
+      |> Pipeline.replace_current_step(step)
+      |> Pipeline.advance()
+
+    config.on_completion.(state)
+    shut_down(state)
   end
 
   @impl GenServer
-  def handle_info({:DOWN, ref, _, _, reason}, {state, _config}) do
-    Logger.info("Step task #{inspect(ref)} terminated unexpectedly. Reason: #{inspect(reason)}")
-    {:stop, :step_failure, state}
+  def handle_info({:DOWN, ref, _, _, reason}, {state, config}) do
+    Logger.error("Step task #{inspect(ref)} terminated unexpectedly. Reason: #{inspect(reason)}")
+    config.on_completion.(state)
+    shut_down(state)
   end
 
-  @doc deprecated: """
-       It runs pipelines using an old, naive, sequential implementation. Use
-       #{__MODULE__}.start_link/1 instead for the recommended concurrent
-       implementation.
-       """
-  def run_pipeline(%Pipeline{} = pipeline) do
-    Enum.reduce(pipeline.steps, pipeline, fn step, acc ->
-      case StepRunner.run_step(step) do
-        {:ok, step} ->
-          Pipeline.complete_step(acc, step)
-
-        {:error, _error} ->
-          acc
-          |> Pipeline.complete_step(step)
-          |> Pipeline.fail()
+  defp report_results(state) do
+    msg =
+      if Pipeline.failed?(state) do
+        "Pipeline failed. Terminating pipeline #{inspect(state)}"
+      else
+        "Pipeline succeeded. Terminating pipeline #{inspect(state)}"
       end
-    end)
+
+    Logger.info(msg)
+    RunManager.pipeline_completed(state)
   end
+
+  defp shut_down(state),
+    do: {:stop, :normal, state}
 end
