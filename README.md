@@ -64,7 +64,7 @@ For an example config file, see the project's own
 
 ## Roadmap
 
-See the [open issues](https://github.com/{{cookiecutter.github_username}}/{{cookiecutter.repo_slug}}/issues)
+See the [open issues](https://github.com/samrose/ex_integrate/issues)
 for a list of proposed features (and known issues).
 
 
