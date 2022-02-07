@@ -24,6 +24,7 @@ ex_integrate-*.tar
 
 # Temporary files, for example, from tests.
 /tmp/
+shell.nix
 
-myshell.nix
-neovim.nix
+#Mnesia
+Mnesia.nonode@nohost/
