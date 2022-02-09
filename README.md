@@ -33,9 +33,73 @@ one of the project goals is to be able to easily replicate and run a CI server
 on a local dev machine, we are currently exploring various release options that
 will facilitate this flexibility.
 
-* Clone this repository
-* `cd path_to_ex_integrate && mix compile`
+Installation steps:
+```sh
+# Git clone this repository
 
+# Enter the project directory
+cd ex_integrate
+
+# Enter a nix shell to set up Nix
+nix-shell -p niv
+
+# Update nixpkgs to the current master branch, which has the latest
+# releases of elixir and erlang
+niv update nixpkgs -b master
+
+# Exit the nix shell
+exit
+
+# Create shell.nix with the example content below
+touch shell.nix
+
+# Enter a nix shell for the project
+nix-shell
+
+# Now that the environment is set up, we can run mix commands
+mix compile
+```
+
+Example `shell.nix`:
+
+```nix
+# shell.nix
+{ sources ? import ./nix/sources.nix }:
+
+with import sources.nixpkgs { };
+let
+  basePackages = [
+    cmake
+    erlang
+    elixir
+  ];
+
+  inputs = basePackages
+    ++ lib.optionals stdenv.isLinux inotify-tools
+    ++ lib.optionals stdenv.isDarwin (with darwin.apple_sdk.frameworks; [
+    # For file_system on macOS.
+    CoreFoundation
+    CoreServices
+  ]);
+
+  hooks = ''
+    export LOCALE_ARCHIVE=/usr/lib/locale/locale-archive
+    mkdir -p .nix-mix
+    mkdir -p .nix-hex
+    export MIX_HOME=$PWD/.nix-mix
+    export HEX_HOME=$PWD/.nix-hex
+    export PATH=$MIX_HOME/bin:$PATH
+    export PATH=$HEX_HOME/bin:$PATH
+    export LANG=en_US.UTF-8
+    export ERL_AFLAGS="-kernel shell_history enabled"
+  '';
+
+in
+mkShell {
+  buildInputs = inputs;
+  shellHook = hooks;
+}
+```
 
 ## Usage
 
