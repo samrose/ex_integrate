@@ -25,7 +25,8 @@ defmodule ExIntegrate.MixProject do
       {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
       {:jason, "~> 1.2"},
       {:libgraph, "~> 0.13"},
-      {:rambo, "~> 0.3"}
+      {:rambo, "~> 0.3"},
+      {:zip_zip, "~> 0.1"}
     ]
   end
 end
