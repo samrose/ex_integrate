@@ -58,6 +58,13 @@ Example `shell.nix`:
 
 with import sources.nixpkgs { };
 let
+  erlang = beam.lib.callErlang ./nix/erlang.nix {};
+
+  elixir = beam.lib.callElixir ./nix/elixir.nix {
+    inherit erlang;
+    debugInfo = true;
+  };
+
   basePackages = [
     cmake
     erlang
