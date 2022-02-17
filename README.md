@@ -40,16 +40,6 @@ Installation steps:
 # Enter the project directory
 cd ex_integrate
 
-# Enter a nix shell to set up Nix
-nix-shell -p niv
-
-# Update nixpkgs to the current master branch, which has the latest
-# releases of elixir and erlang
-niv update nixpkgs -b master
-
-# Exit the nix shell
-exit
-
 # Create shell.nix with the example content below
 touch shell.nix
 
