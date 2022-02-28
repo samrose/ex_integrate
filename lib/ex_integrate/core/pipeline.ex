@@ -4,7 +4,6 @@ defmodule ExIntegrate.Core.Pipeline do
   """
 
   alias ExIntegrate.Core.Step
-  alias ExIntegrate.Core.Zipper
 
   @behaviour Access
 
@@ -16,18 +15,18 @@ defmodule ExIntegrate.Core.Pipeline do
   @type t :: %__MODULE__{
           failed?: boolean,
           name: key,
-          steps: Zipper.t(Step.t())
+          steps: ZipZip.t(Step.t())
         }
 
   @spec new(fields :: Access.t()) :: t
   def new(fields) do
-    fields = put_in(fields[:steps], Zipper.zip(fields[:steps]))
+    fields = put_in(fields[:steps], ZipZip.zip(fields[:steps]))
     struct!(__MODULE__, fields)
   end
 
   @spec steps(t) :: [Step.t()]
   def steps(%__MODULE__{} = pipeline),
-    do: Zipper.to_list(pipeline.steps)
+    do: ZipZip.to_list(pipeline.steps)
 
   @spec pop_step(t()) :: {Step.t(), t()}
   def pop_step(%__MODULE__{} = pipeline) do
@@ -39,11 +38,11 @@ defmodule ExIntegrate.Core.Pipeline do
 
   @spec advance(t) :: t
   def advance(%__MODULE__{} = pipeline),
-    do: %{pipeline | steps: Zipper.right(pipeline.steps)}
+    do: %{pipeline | steps: ZipZip.right(pipeline.steps)}
 
   @spec current_step(t) :: Step.t() | nil
   def current_step(%__MODULE__{} = pipeline),
-    do: Zipper.node(pipeline.steps)
+    do: ZipZip.node(pipeline.steps)
 
   @spec get_step_by_name(t, String.t()) :: Step.t()
   def get_step_by_name(%__MODULE__{} = pipeline, step_name) do
@@ -72,7 +71,7 @@ defmodule ExIntegrate.Core.Pipeline do
     pipeline
     |> Map.update(:steps, pipeline.steps, fn steps ->
       index = pipeline |> steps() |> Enum.find_index(&(&1.name == name))
-      Zipper.replace_at(steps, index, new_step)
+      ZipZip.replace_at(steps, index, new_step)
     end)
     |> Map.put(:failed?, pipeline.failed? || Step.failed?(new_step))
   end
@@ -94,7 +93,7 @@ defmodule ExIntegrate.Core.Pipeline do
 
   @spec complete?(t) :: boolean
   def complete?(%__MODULE__{} = pipeline),
-    do: failed?(pipeline) or Zipper.end?(pipeline.steps)
+    do: failed?(pipeline) or ZipZip.end?(pipeline.steps)
 
   @impl Access
   @spec fetch(t, String.t()) :: {:ok, Step.t()}
