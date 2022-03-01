@@ -11,8 +11,38 @@ builds.
 
 ## About
 
-The OTP message passing and lifecycle is illustrated in the following sequence
-diagram:
+ExIntegrate is a continuous integration system composed of two OTP applications: 
+ExIntegrate Core and ExIntegrate Server. _This repository contains the code for 
+ExIntegrate Core_. 
+
+ExIntegrate Core plays the role of a CI runner. As the system design diagram below 
+demonstrates, all CI runs happen within ExIntegrate Core, while 
+all external interactions take place in ExIntegrate Server.
+
+![20220301_ex_integrate_system_design](https://user-images.githubusercontent.com/45802549/156200951-124900e7-8fff-44a1-bdcc-f793ea64365d.svg)
+
+### Main Concepts
+
+* ExIntegrate allows the user to define and compose a series of system commands 
+to execute. 
+
+* In ExIntegrate, each command is called a __Step__: a single unit of 
+work in the CI flow. Steps run sequentially inside Pipelines, and Pipelines run 
+concurrently inside Runs. A step stores data specifying what is to be executed 
+as well as data about the result of command execution. It has a unique `name`, 
+a `command`, and multiple `args`.
+
+* A __Pipeline__ is a series of Steps, run sequentially.
+
+* A __Run__ consists of many Pipelines, which it runs in parallel except when they
+depend on each other. A Run represents an entire CI orchestrated workflow, 
+from start to finish. (Internally, a run's pipelines are stored in a directed
+acyclic graph (DAG) which is traversed as pipelines are launched and completed.)
+
+* This repository is split into two namespaces: `Core` and `Boundary`. `Core` comprises the functional core of the application and defines data structures and functions that operate on them. `Boundary` comprises the boundary layer which deals with IO, process architecture, and side effects. All OTP code is in the `Boundary` layer.
+
+* ExIntegrate Core uses OTP to manage the lifecycle, concurrency, and fault-tolerance of a run.
+The basic message passing and lifecycle is illustrated below:
 
 ![image](https://user-images.githubusercontent.com/115821/149588633-94a8c673-bfa9-4935-9e19-8555d73e3fb8.png)
 
@@ -21,8 +51,8 @@ diagram:
 
 ### Prerequisites
 
-* Elixir 1.13+ (has not yet been tested on prior versions)
-* Erlang/OTP 24+ (has not yet been tested on prior versions)
+* Elixir 1.13+ (not yet tested on prior versions)
+* Erlang/OTP 24+ (not yet tested on prior versions)
 
 ### Installation
 
@@ -34,6 +64,7 @@ on a local dev machine, we are currently exploring various release options that
 will facilitate this flexibility.
 
 Installation steps:
+
 ```sh
 # Git clone this repository
 
